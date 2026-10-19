@@ -1,7 +1,14 @@
 import {
   getAdminRenderedImagePreviewSrc
 } from '../../lib/admin-console/image-params';
-import { formatAdminImageMetaSummary, type AdminImageClientItem } from '../admin-shared/image-client';
+import { ADMIN_HERO_IMAGE_UPLOAD_API_PATH } from '../../lib/admin-console/admin-api-paths';
+import { createWithBase } from '../../utils/format';
+import {
+  formatAdminImageMetaSummary,
+  getAdminImageResponseErrors,
+  isRecord,
+  type AdminImageClientItem
+} from '../admin-shared/image-client';
 import type { AdminImagePickerController, AdminImagePickerField } from '../admin-shared/image-picker';
 
 type StatusSetter = (
@@ -11,7 +18,22 @@ type StatusSetter = (
 ) => void;
 
 const base = import.meta.env.BASE_URL ?? '/';
+const withBase = createWithBase(base);
 const META_PREVIEW_DEBOUNCE_MS = 360;
+const HERO_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+const HERO_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
+
+const getHeroUploadValidationError = (file: File): string | null => {
+  if (!file.size) return '图片文件为空，请重新选择';
+  if (file.size > HERO_IMAGE_MAX_BYTES) return '图片超过 12 MB，请压缩后再上传';
+  if (
+    (file.type && !HERO_IMAGE_MIME_TYPES.has(file.type))
+    || !/\.(?:jpe?g|png|webp|avif|gif)$/i.test(file.name)
+  ) {
+    return '请选择 JPG、PNG、WebP、AVIF 或 GIF 图片';
+  }
+  return null;
+};
 
 type ThemeImageFieldConfig = {
   field: AdminImagePickerField;
@@ -183,6 +205,7 @@ export const createAdminThemeImageFields = ({
     const previewPlaceholder = root.querySelector<HTMLElement>(
       `[data-admin-images-preview-placeholder="${config.field}"]`
     );
+    const isHero = config.field === 'home.heroImageSrc';
     return {
       config,
       input,
@@ -190,11 +213,28 @@ export const createAdminThemeImageFields = ({
       metaEl,
       previewWrap,
       previewImg,
-      previewPlaceholder
+      previewPlaceholder,
+      uploadButton: isHero ? root.querySelector<HTMLButtonElement>('[data-admin-hero-upload]') : null,
+      fileInput: isHero ? root.querySelector<HTMLInputElement>('[data-admin-hero-file]') : null,
+      uploadStatus: isHero ? root.querySelector<HTMLElement>('[data-admin-hero-upload-status]') : null,
+      uploadBusy: false
     };
   }).filter((binding) => binding.input instanceof HTMLInputElement);
 
   if (!bindings.length) return null;
+
+  const syncImageControls = (binding: typeof bindings[number]): void => {
+    const disabled = binding.uploadBusy
+      || getFieldState(binding.config.field).enabled === false
+      || binding.input?.disabled === true;
+    if (binding.button) binding.button.disabled = disabled;
+    if (binding.uploadButton) {
+      binding.uploadButton.disabled = disabled;
+      binding.uploadButton.textContent = binding.uploadBusy ? '正在上传…' : '上传图片';
+      binding.uploadButton.setAttribute('aria-busy', String(binding.uploadBusy));
+    }
+    if (binding.fileInput) binding.fileInput.disabled = disabled;
+  };
 
   const updateField = async (field: AdminImagePickerField) => {
     const binding = bindings.find((item) => item.config.field === field);
@@ -202,9 +242,7 @@ export const createAdminThemeImageFields = ({
 
     const state = getFieldState(field);
     const isEnabled = state.enabled !== false;
-    if (binding.button instanceof HTMLButtonElement) {
-      binding.button.disabled = !isEnabled || binding.input.disabled;
-    }
+    syncImageControls(binding);
 
     if (!isEnabled) {
       setMetaText(binding.metaEl, state.inactiveMetaText ?? '');
@@ -293,7 +331,88 @@ export const createAdminThemeImageFields = ({
       void updateField(binding.config.field);
     };
 
+    const setUploadStatus = (state: string, message: string): void => {
+      if (binding.uploadStatus) {
+        binding.uploadStatus.dataset.state = state;
+        setMetaText(binding.uploadStatus, message);
+      }
+      setStatus(state, message, { announce: false });
+    };
+
+    const uploadHeroImage = async (file: File): Promise<void> => {
+      const input = binding.input;
+      if (
+        !(input instanceof HTMLInputElement)
+        || binding.uploadBusy
+        || input.disabled
+        || getFieldState(binding.config.field).enabled === false
+      ) return;
+
+      const validationError = getHeroUploadValidationError(file);
+      if (validationError) {
+        setUploadStatus('warn', validationError);
+        return;
+      }
+
+      binding.uploadBusy = true;
+      syncImageControls(binding);
+      setUploadStatus('loading', '正在上传 Hero 图片…');
+      try {
+        const formData = new FormData();
+        formData.set('image', file);
+        const response = await fetch(withBase(ADMIN_HERO_IMAGE_UPLOAD_API_PATH), {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body: formData
+        });
+        if (response.status === 401) {
+          setUploadStatus('warn', '登录已过期，请重新登录后台后上传');
+          return;
+        }
+        const payload: unknown = await response.json().catch(() => null);
+        if (
+          !response.ok
+          || !isRecord(payload)
+          || payload.ok !== true
+          || !isRecord(payload.result)
+          || typeof payload.result.src !== 'string'
+          || !/^src\/assets\/hero-uploads\/hero-[a-f\d]+\.(?:jpe?g|png|webp|avif|gif)$/i.test(payload.result.src)
+        ) {
+          const message = getAdminImageResponseErrors(payload).join('；') || 'Hero 图片上传失败，请稍后重试';
+          setUploadStatus('warn', message);
+          return;
+        }
+
+        input.value = payload.result.src;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        setUploadStatus('ok', '已上传，保存配置后生效');
+      } catch {
+        setUploadStatus('warn', 'Hero 图片上传失败，请检查网络后重试');
+      } finally {
+        binding.uploadBusy = false;
+        syncImageControls(binding);
+      }
+    };
+
+    binding.uploadButton?.addEventListener('click', () => {
+      if (binding.uploadButton?.disabled || binding.uploadBusy || binding.input?.disabled) return;
+      binding.fileInput?.click();
+    });
+    binding.fileInput?.addEventListener('change', () => {
+      const file = binding.fileInput?.files?.[0];
+      if (binding.fileInput) binding.fileInput.value = '';
+      if (file) void uploadHeroImage(file);
+    });
+    if (binding.uploadButton) {
+      new MutationObserver(() => syncImageControls(binding)).observe(binding.input, {
+        attributes: true,
+        attributeFilter: ['disabled']
+      });
+    }
+
     binding.input.addEventListener('input', () => {
+      if (!binding.uploadBusy) setMetaText(binding.uploadStatus, '');
       setMetaText(binding.metaEl, '等待确认路径并读取元数据');
       setPreview(
         binding.previewWrap,

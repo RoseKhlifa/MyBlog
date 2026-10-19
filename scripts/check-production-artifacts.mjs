@@ -136,7 +136,8 @@ export const runProductionArtifactCheck = async (options = {}) => {
     'dist/api/admin/images/list',
     'dist/api/admin/images/meta',
     'dist/api/admin/images/upload',
-    'dist/api/admin/site-assets/upload'
+    'dist/api/admin/site-assets/upload',
+    'dist/api/admin/site-assets/hero'
   ];
 
   for (const artifactPath of requiredArtifacts) {
@@ -494,6 +495,12 @@ export const runProductionArtifactCheck = async (options = {}) => {
     'dist/api/admin/site-assets/upload',
     adminSiteAssetUploadArtifact,
     '/api/admin/site-assets/upload/'
+  );
+  const adminHeroUploadArtifact = readText('dist/api/admin/site-assets/hero');
+  assertAdminImageUploadStaticShell(
+    'dist/api/admin/site-assets/hero',
+    adminHeroUploadArtifact,
+    '/api/admin/site-assets/hero/'
   );
 
   console.log('Production artifact verification passed.');

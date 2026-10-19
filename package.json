@@ -44,7 +44,8 @@
     "@aws-sdk/client-s3": "^3.1106.0",
     "@lucide/astro": "^1.28.0",
     "astro": "^7.1.6",
-    "github-slugger": "^2.0.0"
+    "github-slugger": "^2.0.0",
+    "sharp": "0.35.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.8",

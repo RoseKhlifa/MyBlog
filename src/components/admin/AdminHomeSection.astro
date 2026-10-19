@@ -43,7 +43,7 @@ const { homeIntroMaxLength } = Astro.props;
                 <span>展示</span>
               </label>
             </div>
-            <div class="admin-images-field-input">
+            <div class="admin-images-field-input admin-images-field-input--hero-upload">
               <input
                 class="admin-field__control"
                 id="home-hero-image-src"
@@ -52,17 +52,44 @@ const { homeIntroMaxLength } = Astro.props;
                 spellcheck="false"
                 placeholder="当前使用：src/assets/hero.png"
                 aria-label="Hero 图片地址"
-                aria-describedby="home-hero-image-src-tip"
+                aria-describedby="home-hero-image-src-tip home-hero-image-upload-help home-hero-image-upload-status"
               />
+              <button
+                class="admin-btn"
+                type="button"
+                data-admin-hero-upload
+                aria-controls="home-hero-image-file"
+              >
+                上传图片
+              </button>
               <button
                 class="admin-btn admin-btn--ghost"
                 type="button"
                 data-admin-images-open="home.heroImageSrc"
                 aria-label="选择本地 Hero 图片"
               >
-                选择
+                选择已有
               </button>
             </div>
+            <input
+              id="home-hero-image-file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/gif,.jpg,.jpeg,.png,.webp,.avif,.gif"
+              data-admin-hero-file
+              aria-label="上传 Hero 图片"
+              hidden
+            />
+            <p class="admin-help admin-help--inline" id="home-hero-image-upload-help">
+              支持 JPG、PNG、WebP、AVIF、GIF，最大 12 MB；上传后保存配置生效。
+            </p>
+            <p
+              class="admin-help admin-help--inline"
+              id="home-hero-image-upload-status"
+              data-admin-hero-upload-status
+              role="status"
+              aria-live="polite"
+              hidden
+            ></p>
             <p class="admin-help admin-help--inline" data-admin-images-meta="home.heroImageSrc" hidden></p>
           </div>
           <div class="admin-field">

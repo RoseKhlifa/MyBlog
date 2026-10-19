@@ -152,6 +152,14 @@
   gap: 8px;
 }
 
+.admin-images-field-input--hero-upload {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+[data-admin-hero-upload-status][data-state='warn'] {
+  color: var(--admin-status-danger-text);
+}
+
 .admin-images-field-preview {
   width: min(180px, 100%);
   margin-top: 10px;
@@ -1134,6 +1142,15 @@
 }
 
 @container admin-theme-form (max-width: 480px) {
+  .admin-images-field-input--hero-upload {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .admin-images-field-input--hero-upload > .admin-field__control {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
   .admin-sidebar-layout {
     grid-template-columns: 1fr;
     gap: 18px;
