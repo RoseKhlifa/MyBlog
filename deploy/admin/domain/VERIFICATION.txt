@@ -1,0 +1,171 @@
+BLOG DOMAIN ADMIN INTEGRATION - VERIFIED 2026-10-20 Asia/Shanghai
+ENTRY: https://blog.rosekhlifa.com/admin/
+LOGIN: https://blog.rosekhlifa.com/admin/login/
+PUBLIC: https://blog.rosekhlifa.com/
+LOCAL_ROOT: E:\RoseKhlifa.com\blog
+SERVER_SOURCE: /opt/rosekhlifa-blog/source
+BRANCH: deploy/first-deployment
+CHANGED_FIELDS: 1Panel editor routes -> existing admin service; trusted browser Origin includes HTTPS blog domain; WebSocket path /admin/_hmr/; standard HTML login and signed 12-hour session Cookie.
+MODIFIED_FILE: E:\RoseKhlifa.com\blog\deploy\admin\nginx.conf
+DIFF_FILE: E:\RoseKhlifa.com\blog\deploy\admin\domain\DIFF_FILE.patch
+VERIFICATION: E:\RoseKhlifa.com\blog\deploy\admin\domain\VERIFICATION.txt
+ROLLBACK: E:\RoseKhlifa.com\blog\deploy\admin\domain\ROLLBACK.sh
+ORIGINAL_FILE: E:\RoseKhlifa.com\blog\deploy\admin\domain\evidence\admin-nginx.before.conf
+ORIGINAL_SHA256: 18276bd0ec1cffd13ad34c5dde08d66800f3fd42b916674f68f7ae374683ea9c
+MODIFIED_SHA256: 62ec27350209b0323828b579cd8c00f98b4a51a16c445d78a65de5e3f29d4eef
+SERVER_1PANEL_ADDITION: /opt/1panel/www/sites/blog.rosekhlifa.com/proxy/online-admin.conf
+SERVER_1PANEL_INCLUDE: /opt/1panel/www/sites/blog.rosekhlifa.com/proxy/online-admin-upstream.inc
+SERVER_CONFIG_BACKUP: /opt/rosekhlifa-blog/deploy/admin/domain/backups/20261019T175511Z-2483456
+PASSWORD: unchanged, stored locally in deploy/artifacts/online-admin-login.txt; never printed by verification scripts.
+
+BASELINE
+EXACT_COMMAND: curl.exe -sS -o deploy/artifacts/domain-admin-baseline.html -w 'BASELINE domain admin HTTP %{http_code}\n' https://blog.rosekhlifa.com/admin/content/
+INPUT: existing domain /admin/content/ before routing changes, no login.
+LITERAL_OUTPUT: BASELINE domain admin HTTP 200
+EXIT_STATUS: 0
+RESULT: domain reached static production admin shell, not the editing workspace. Server admin18181 itself was running healthy, but the in-app browser reproduced net::ERR_INVALID_AUTH_CREDENTIALS for the original Basic challenge during this task.
+
+MODIFIED - FULL DOMAIN PUBLISH/EDIT/UPLOAD/DELETE
+EXACT_COMMAND: node --use-env-proxy deploy/admin/verify-online.mjs
+WORKDIR: E:\RoseKhlifa.com\blog
+INPUT: domain origin and public URL https://blog.rosekhlifa.com; existing generated credentials read locally; temporary acceptance article online-smoke-1792432603832.
+LITERAL_OUTPUT:
+BASELINE 401 /admin/content/ without login
+BASELINE 401 /@vite/client without login
+BASELINE 401 /_publish/status without login
+BASELINE 401 /api/admin/content/entry/?collection=essay&entryId=markdown-guide without login
+MODIFIED 200 /admin/content/ authenticated
+MODIFIED 200 /@vite/client authenticated
+MODIFIED 200 /_publish/status.js authenticated
+403 write rejected for missing Origin
+403 write rejected for foreign Origin
+200 /api/admin/content/create/ ok=true
+DRAFT PASS: saved on server and absent from public site
+200 /api/admin/images/upload/ ok=true
+200 /api/admin/content/entry/ ok=true
+Waiting for public update: queued
+PUBLISH PASS: https://blog.rosekhlifa.com/archive/online-smoke-1792432603832/; uploaded image HTTP 200
+RSS PASS: published article appears in feed
+200 /api/admin/content/entry/ ok=true
+Waiting for public update: publishing
+EDIT PASS: saved article changes automatically reached the public site
+200 /api/admin/content/entry/?collection=essay&entryId=online-smoke-1792432603832 ok=true
+200 /api/admin/content/delete/ ok=true
+Waiting for public update: publishing
+ROLLBACK PASS: temporary article removed from public site/RSS; original demo content remains
+ONLINE PASS: TLS/login/CSRF/draft/image upload/publish/edit/delete/automatic production update
+
+EXIT_STATUS: 0
+RESULT: real domain article/image upload/publish/edit/RSS/delete verified; temporary article and its disposable attachment removed.
+
+MODIFIED - STANDARD WEB LOGIN AND COOKIE
+EXACT_COMMAND: node --use-env-proxy deploy/admin/domain/verify-session.mjs
+INPUT: original username/password from local file; trusted system TLS; no Basic browser challenge; Cookie-only requests after form login.
+LITERAL_OUTPUT:
+PUBLIC PASS: homepage HTTP 200 without login
+BASELINE PASS: /admin/ -> HTTP 303 /admin/login/; no browser authentication popup
+LOGIN PAGE PASS: HTTP 200; Chinese username/password form; trusted domain TLS
+MODIFIED PASS: form login HTTP 303 /admin/content/; secure HttpOnly session cookie issued
+SESSION PASS: HTTP 200 /admin/content/
+SESSION PASS: HTTP 200 /admin/content/essay/_edit/markdown-guide/
+SESSION PASS: HTTP 200 /@vite/client
+SESSION PASS: HTTP 200 /_publish/status
+SESSION PASS: HTTP 200 /api/admin/content/entry/?collection=essay&entryId=markdown-guide
+CSRF PASS: foreign login Origin HTTP 403
+COOKIE WRITE PASS: authenticated same-origin article validation HTTP 200 (dry run, original article preserved)
+LOGOUT PASS: HTTP 303 /admin/login/; browser session cookie cleared
+DOMAIN SESSION PASS: public homepage, HTML login form, session-protected editor/modules/API, logout
+
+EXIT_STATUS: 0
+RESULT: browser navigation redirects to HTML login; session protects editor and API; same-origin save validation passed using only Cookie; public homepage requires no login.
+
+BROWSER VERIFICATION
+TOOL_ACTION: create in-app browser tab at https://blog.rosekhlifa.com/admin/login/; navigate to https://blog.rosekhlifa.com/admin/; observe accessibility tree.
+LITERAL_VISIBLE_STATE: Title "博客管理登录"; heading "博客管理"; text "登录后即可写作、编辑和上传图片。"; fields "用户名" and "密码"; button "登录"; link "返回博客".
+FINAL_URL: https://blog.rosekhlifa.com/admin/login/?next=/admin/
+RESULT: final form visibly opens in the user's in-app browser; tab retained as deliverable. Login credentials were not entered or exposed through browser automation.
+
+MODULE GRAPH
+EXACT_COMMAND: node --use-env-proxy deploy/admin/domain/verify-modules.mjs
+INPUT: authenticated content list and existing markdown-guide editor; real ESM imports parsed with es-module-lexer; public fonts and styles; standard TLS trust.
+LITERAL_OUTPUT:
+SEED PASS: 200 /admin/content/
+SEED PASS: 200 /admin/content/essay/_edit/markdown-guide/
+SEED PASS: 200 /api/admin/content/entry/?collection=essay&entryId=markdown-guide
+SEED PASS: 200 /@vite/client
+SEED PASS: 200 /site.config.mjs
+SEED PASS: 200 /_publish/status.js
+SEED PASS: 200 /_publish/status
+MODULE ROOTS: {"/_publish":1,"/@id":2,"/@vite":1,"/fonts":9,"/node_modules":159,"/src":113}
+MODULE PASS: 2 authenticated admin pages; 285 same-origin JavaScript/CSS/assets; all HTTP 200 with expected MIME; system TLS validation enabled
+
+EXIT_STATUS: 0
+RESULT: 285 module/style/font resources return200 with expected MIME. Initial regex crawler false positives were replaced with actual ESM parsing; temporary502 during proxy recreation resolved. No application failure was suppressed.
+
+WEBSOCKET
+EXACT_COMMAND: node --use-env-proxy deploy/admin/verify-connection.mjs
+INPUT: protected Vite token; authenticated WSS https://blog.rosekhlifa.com/admin/_hmr/; valid external Origin.
+LITERAL_OUTPUT:
+CONNECTION PASS: authenticated HTTPS module load and WSS WebSocket handshake HTTP 101
+RESTART PASS: 200 /admin/content/
+RESTART PASS: 200 /_publish/status
+RESTART PASS: 200 /api/admin/content/entry/?collection=essay&entryId=markdown-guide
+
+EXIT_STATUS: 0
+RESULT: dedicated management WebSocket does not route through public homepage.
+
+ROLLBACK - INDEPENDENT COPY
+EXACT_COMMAND: ssh -o BatchMode=yes -o ConnectTimeout=15 root@51.83.101.143 'bash /opt/rosekhlifa-blog/deploy/admin/domain/test-rollback.sh'
+INPUT: original proxy/service copies, added domain routes, preserved article, real domain/ROLLBACK.sh --root COPY --no-service.
+LITERAL_OUTPUT:
+CLEANUP PASS: temporary attachment directory removed; real articles preserved
+ROLLBACK PASS: previous admin proxy/editor configuration restored; public blog/source unchanged; service=skipped
+ROLLBACK COPY PASS: original configuration SHA256 restored; extra domain routes removed; article preserved
+Test copy retained at /tmp/rosekhlifa-domain-rollback.WaTRIj
+ecf90dfc254c41c8778c0905fe8034371d79296e8626c6df1cc58d1a6208aaa9  /opt/1panel/www/sites/blog.rosekhlifa.com/proxy/root.conf
+ecf90dfc254c41c8778c0905fe8034371d79296e8626c6df1cc58d1a6208aaa9  /opt/rosekhlifa-blog/deploy/admin/domain/backups/20261019T175511Z-2483456/root.untouched.conf
+
+EXIT_STATUS: 0
+RESTORED_STATUS: test copy admin proxy/service bytes match original SHA256; added domain routes removed; article preserved.
+PRODUCTION_STATUS: domain login remains active; original root.conf SHA256 matches pre-change backup; public content/source preserved.
+ROOT_PROXY_SHA256: ecf90dfc254c41c8778c0905fe8034371d79296e8626c6df1cc58d1a6208aaa9
+
+FINAL SERVER VALIDATION
+COMMANDS: systemctl is-enabled/is-active editor publisher auth; docker inspect public/admin; nginx -t both existing 1Panel and admin; ss14322; published state; final hashes; public HTTPS HEAD.
+LITERAL_OUTPUT:
+enabled
+enabled
+enabled
+active
+active
+active
+/rosekhlifa-blog running healthy
+/rosekhlifa-blog-admin running healthy
+nginx: the configuration file /usr/local/openresty/nginx/conf/nginx.conf syntax is ok
+nginx: configuration file /usr/local/openresty/nginx/conf/nginx.conf test is successful
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+LISTEN 0      64     127.0.0.1:14322 0.0.0.0:*
+{
+  "state": "published",
+  "status": "published",
+  "message": "Saved articles are live. The production health check passed.",
+  "updatedAt": "2026-10-19T18:03:54Z",
+  "lastPublishedAt": "2026-10-19T18:03:54Z",
+  "releaseId": "online-20261019T180342Z-8e098ed62646"
+}
+fe002c36c5804acdccd1654065127b300b43acf4190329fc26ec93bb197948aa  /opt/1panel/www/sites/blog.rosekhlifa.com/proxy/online-admin.conf
+62ec27350209b0323828b579cd8c00f98b4a51a16c445d78a65de5e3f29d4eef  /opt/rosekhlifa-blog/deploy/admin/nginx.conf
+HTTP/2 200 
+date: Mon, 19 Oct 2026 18:04:09 GMT
+content-type: text/html
+
+EXIT_STATUS: 0
+RESULT: 3 services enabled and active; 2 blog containers running/healthy; 1Panel and admin Nginx config validation successful; public HTTPS200.
+
+MAINTENANCE
+Domain routes are additive in this blog's existing 1Panel proxy directory. Existing public root.conf and main blog server/certificate configuration remain byte-identical to the recorded backups.
+Dedicated root-owned wrapper config chooses the management WebSocket path without editing upstream Astro theme source.
+Session auth service is loopback-only127.0.0.1:14322 and reads PBKDF2/HMAC settings from root-owned session-auth/credentials.json; original account retained.
+Full instructions: E:\RoseKhlifa.com\blog\ONLINE-WRITING.md
+All four artifacts were reopened; rollback is executable on the server.

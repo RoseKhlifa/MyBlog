@@ -1,0 +1,208 @@
+ONLINE WRITING VERIFIED - 2026-10-20 Asia/Shanghai
+ADMIN_URL: https://51.83.101.143:18181/admin/content/
+PUBLIC_URL: http://51.83.101.143:18180
+USERNAME: rosekhlifa
+PASSWORD_LOCATION: E:\RoseKhlifa.com\blog\deploy\artifacts\online-admin-login.txt (current Windows user only)
+SERVER_PASSWORD_LOCATION: /opt/rosekhlifa-blog/admin-secrets/login.txt (0600 root)
+LOCAL_PROJECT: E:\RoseKhlifa.com\blog
+SERVER_SOURCE: /opt/rosekhlifa-blog/source
+PRODUCTION_SITE_URL: https://blog.rosekhlifa.com
+CHANGED_BRANCH: deploy/first-deployment
+CHANGED_FIELDS: online authoring marker active; new authenticated TLS listener18181; editor loopback14321; automatic production publishing; Deploy.ps1 AllowLocalContentReplace guard.
+MODIFIED_FILE: E:\RoseKhlifa.com\blog\deploy\Deploy.ps1
+DIFF_FILE: E:\RoseKhlifa.com\blog\deploy\admin\DIFF_FILE.patch
+VERIFICATION: E:\RoseKhlifa.com\blog\deploy\admin\VERIFICATION.txt
+ROLLBACK: E:\RoseKhlifa.com\blog\deploy\admin\ROLLBACK.sh
+ORIGINAL_FILE: E:\RoseKhlifa.com\blog\deploy\admin\evidence\Deploy.before-online.ps1
+ORIGINAL_SHA256: 3629be4914f62d6df1e430c0251f40fbd2d682400d6c3b309328ebdc1f73ddb3
+MODIFIED_SHA256: 117bc4f4db5a035d07b4da6b8a97fc5cce599b4c3863d5c8bbc2afc23fbde0be
+
+SERVER DESIGN
+Astro theme source and its original editor remain unchanged. Editor and publisher run as unprivileged rosekhlifa-blog user.
+Astro DEV is reachable only on 127.0.0.1:14321. All public editor/API/module/image/WebSocket paths require BasicAuth on HTTPS18181.
+Write and WebSocket origins are checked before internal proxy headers are normalized.
+A self-signed IP/DNS SAN certificate protects this initial IP editor; first browser use needs certificate confirmation. Its fingerprint is recorded below and in the login file.
+Publisher waits for source stability, uses separate build dependencies/cache, creates source backup, runs build plus production artifact verification, verifies archive, then atomically activates a healthy release.
+Public blog continues serving static files on18180. Failed builds leave the previous public release in place.
+
+BASELINE / MODIFIED ACCEPTANCE
+EXACT_COMMAND: node deploy/admin/verify-online.mjs
+WORKDIR: E:\RoseKhlifa.com\blog
+INPUT: generated username/password read from local ignored login file; TLS CA pinned to copied server certificate; temporary article online-smoke-1792431700003.
+BASELINE: no Authorization header; expected401 for editor, module, status, API. Foreign/missing Origin write requests expected403.
+MODIFIED: authenticated requests; create draft, upload SVG, publish article, public image/RSS check, save edit, delete temporary article, wait for production deletion.
+LITERAL_OUTPUT:
+BASELINE 401 /admin/content/ without login
+BASELINE 401 /@vite/client without login
+BASELINE 401 /_publish/status without login
+BASELINE 401 /api/admin/content/entry/?collection=essay&entryId=markdown-guide without login
+MODIFIED 200 /admin/content/ authenticated
+MODIFIED 200 /@vite/client authenticated
+MODIFIED 200 /_publish/status.js authenticated
+403 write rejected for missing Origin
+403 write rejected for foreign Origin
+200 /api/admin/content/create/ ok=true
+DRAFT PASS: saved on server and absent from public site
+200 /api/admin/images/upload/ ok=true
+200 /api/admin/content/entry/ ok=true
+Waiting for public update: queued
+PUBLISH PASS: http://51.83.101.143:18180/archive/online-smoke-1792431700003/; uploaded image HTTP 200
+RSS PASS: published article appears in feed
+200 /api/admin/content/entry/ ok=true
+Waiting for public update: publishing
+EDIT PASS: saved article changes automatically reached the public site
+200 /api/admin/content/entry/?collection=essay&entryId=online-smoke-1792431700003 ok=true
+200 /api/admin/content/delete/ ok=true
+Waiting for public update: publishing
+ROLLBACK PASS: temporary article removed from public site/RSS; original demo content remains
+ONLINE PASS: TLS/login/CSRF/draft/image upload/publish/edit/delete/automatic production update
+
+EXIT_STATUS: 0
+RESULT: authenticated online draft/image upload/publish/edit/delete all passed; article changes automatically reached public site and RSS.
+TEMPORARY_CONTENT_RESTORED: acceptance article and its attachment removed; original demo articles remain; public source has no smoke article.
+
+ROLLBACK ON INDEPENDENT COPY
+EXACT_COMMAND: ssh -o BatchMode=yes -o ConnectTimeout=15 root@51.83.101.143 'bash /opt/rosekhlifa-blog/deploy/admin/test-rollback.sh'
+INPUT: isolated source/current copy and .online-authoring marker; real admin/ROLLBACK.sh --root COPY --no-service.
+LITERAL_OUTPUT:
+CLEANUP PASS: temporary attachment directory removed; real articles preserved
+ROLLBACK PASS: online writing disabled; public site/source/media/backups preserved; service=skipped
+ROLLBACK COPY PASS: online marker disabled; source/current bytes and symlink preserved
+Test copy retained at /tmp/rosekhlifa-online-rollback.nzdWFn
+
+EXIT_STATUS: 0
+RESTORED_STATUS: copy online-authoring marker disabled; source/current hashes and current symlink preserved. Production online editor remains active.
+Real rollback command disables editor/publisher and stops only admin container; published blog and all source/media/backups remain.
+
+PUBLISHER ISOLATED INTEGRATION TESTS
+COMMAND: python deploy/admin/evidence/test_publisher.py
+INPUT: independent temporary fixture; fake npm/rsync/sudo; no production deployment.
+LITERAL_OUTPUT:
+test_build_failure_preserves_live_and_retry_recovers (__main__.PublisherIntegration.test_build_failure_preserves_live_and_retry_recovers) ... ok
+test_change_during_build_queues_latest_and_skips_stale_activation (__main__.PublisherIntegration.test_change_during_build_queues_latest_and_skips_stale_activation) ... ok
+test_debounce_publish_snapshot_and_independent_dependencies (__main__.PublisherIntegration.test_debounce_publish_snapshot_and_independent_dependencies) ... ok
+test_fingerprint_ignores_scratch_and_secrets_but_tracks_deletions (__main__.PublisherIntegration.test_fingerprint_ignores_scratch_and_secrets_but_tracks_deletions) ... ok
+test_latest_log_is_bounded (__main__.PublisherIntegration.test_latest_log_is_bounded) ... ok
+test_restart_does_not_publish_same_version_and_recovers_pending_change (__main__.PublisherIntegration.test_restart_does_not_publish_same_version_and_recovers_pending_change) ... ok
+test_timeout_does_not_activate (__main__.PublisherIntegration.test_timeout_does_not_activate) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 4.307s
+
+OK
+
+EXIT_STATUS: 0
+RESULT: debounce, failure preserves live, retry, mid-build save queues latest, restart deduplication, timeout, bounded logs, source exclusions.
+
+ROOT ARCHIVE HANDOFF TESTS
+EXACT_COMMAND: ssh -o BatchMode=yes -o ConnectTimeout=15 root@51.83.101.143 'python3 /tmp/rosekhlifa-blog-handoff-tests.py /opt/rosekhlifa-blog/deploy/admin/activate-online.sh'
+INPUT: root-owned temporary Linux fixtures only, real root wrapper copy/check code; no activation.
+LITERAL_OUTPUT:
+test_digest_mismatch_removes_partial_root_copy (__main__.RootArchiveHandoff.test_digest_mismatch_removes_partial_root_copy) ... ok
+test_existing_different_archive_is_never_overwritten (__main__.RootArchiveHandoff.test_existing_different_archive_is_never_overwritten) ... ok
+test_fifo_source_fails_without_blocking (__main__.RootArchiveHandoff.test_fifo_source_fails_without_blocking) ... ok
+test_symlink_source_is_rejected_without_target (__main__.RootArchiveHandoff.test_symlink_source_is_rejected_without_target) ... ok
+test_valid_copy_is_root_owned_and_retries_identically (__main__.RootArchiveHandoff.test_valid_copy_is_root_owned_and_retries_identically) ... ok
+test_writable_root_destination_directory_is_rejected (__main__.RootArchiveHandoff.test_writable_root_destination_directory_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.326s
+
+OK
+
+EXIT_STATUS: 0
+RESULT: normal copy, retry, symlink/FIFO denial, SHA mismatch cleanup, existing archive preservation, writable destination rejection all passed.
+
+RESTART AND WEBSOCKET
+EXACT_COMMAND: node deploy/admin/verify-connection.mjs
+INPUT: pinned certificate; generated login; protected Vite token; HTTPS module and WSS upgrade.
+LITERAL_OUTPUT:
+CONNECTION PASS: authenticated HTTPS module load and WSS WebSocket handshake HTTP 101
+RESTART PASS: 200 /admin/content/
+RESTART PASS: 200 /_publish/status
+RESTART PASS: 200 /api/admin/content/entry/?collection=essay&entryId=markdown-guide
+
+EXIT_STATUS: 0
+RESULT: editor/module/API/status still available after restarting both systemd services and the admin container; automatic publication fingerprint restored without duplicate release.
+
+FINAL SERVICE AND CERTIFICATE STATE
+COMMANDS: systemctl is-enabled/is-active editor publisher; docker inspect public/admin; ss18181/14321; readlink current; cat status; openssl x509 fingerprint/dates; stat login and rollback script; test acceptance files absent
+LITERAL_OUTPUT:
+enabled
+enabled
+active
+active
+/rosekhlifa-blog running healthy unless-stopped
+/rosekhlifa-blog-admin running healthy unless-stopped
+LISTEN 0      511    0.0.0.0:18181 0.0.0.0:*
+LISTEN 0      511    127.0.0.1:14321 0.0.0.0:*
+releases/online-20261019T174507Z-2fbedb48bd51
+{
+  "state": "published",
+  "status": "published",
+  "message": "Saved content matches the last successfully published version.",
+  "updatedAt": "2026-10-19T17:46:04Z",
+  "lastPublishedAt": "2026-10-19T17:45:20Z",
+  "releaseId": "online-20261019T174507Z-2fbedb48bd51"
+}
+sha256 Fingerprint=44:DA:8E:63:A8:55:E0:F0:F9:41:77:A2:5E:F7:89:B5:B2:B0:09:CE:59:5A:86:F6:3C:A2:D6:21:16:BB:9E:74
+notBefore=Oct 19 17:41:09 2026 GMT
+notAfter=Oct 19 17:41:09 2027 GMT
+600 root:root /opt/rosekhlifa-blog/admin-secrets/login.txt
+755 root:root /opt/rosekhlifa-blog/deploy/admin/ROLLBACK.sh
+acceptance_article_removed
+acceptance_attachment_removed
+
+EXIT_STATUS: 0
+RESULT: both services enabled and active; both containers running healthy unless-stopped; public admin18181 and private editor127.0.0.1:14321 confirmed; status published.
+
+PUBLIC SITE FINAL REGRESSION
+EXACT_COMMAND: node deploy/verify-public.mjs http://51.83.101.143:18180 --skip-local-hash
+INPUT: current server-generated static build; original demo article and real static assets/fonts/RSS.
+LITERAL_OUTPUT:
+200 / text/html 25201 bytes
+200 /archive/markdown-guide/ text/html 48498 bytes
+200 /_health text/plain 3 bytes
+200 /rss.xml text/xml 2481 bytes
+200 /archive/rss.xml text/xml 2460 bytes
+200 /essay/rss.xml text/xml 2469 bytes
+200 /sitemap-index.xml text/xml 190 bytes
+200 /sitemap-0.xml text/xml 1971 bytes
+200 /robots.txt text/plain 77 bytes
+200 /_astro/global.Cp72ITzf.css text/css 45358 bytes
+200 /_astro/hero.DZf7jsGa_2cGdYb.png image/png 271807 bytes
+200 /_astro/BaseLayout.astro_astro_type_script_index_0_lang.z2d_3HBZ.js application/javascript 4420 bytes
+200 /_astro/article.D6eyYK2t.css text/css 17700 bytes
+200 /_astro/ArticleLayout.astro_astro_type_script_index_0_lang.BPtGR8J2.js application/javascript 157 bytes
+200 /fonts/lxgw-wenkai-lite-latin.woff2 font/woff2 32296 bytes
+200 /fonts/lxgw-wenkai-lite-cjk-common.woff2 font/woff2 815380 bytes
+200 /fonts/lxgw-wenkai-lite-cjk-ext.woff2 font/woff2 504172 bytes
+200 /fonts/noto-serif-sc-400-latin.woff2 font/woff2 46188 bytes
+200 /fonts/noto-serif-sc-400-cjk-common.woff2 font/woff2 650424 bytes
+200 /fonts/noto-serif-sc-400-cjk-ext.woff2 font/woff2 1333304 bytes
+200 /fonts/noto-serif-sc-600-latin.woff2 font/woff2 46328 bytes
+200 /fonts/noto-serif-sc-600-cjk-common.woff2 font/woff2 660928 bytes
+200 /fonts/noto-serif-sc-600-cjk-ext.woff2 font/woff2 1353224 bytes
+301 /about -> /about/ (origin preserved)
+404 /__deployment_missing_page__ text/html 146 bytes
+PUBLIC PASS: 24 responses; local homepage hash comparison skipped for rollback; canonical/RSS use https://blog.rosekhlifa.com
+
+EXIT_STATUS: 0
+RESULT: original public blog remains functional; production canonical/RSS retain blog.rosekhlifa.com.
+
+BACKUP
+COMMAND: & .\deploy\admin\Backup-Source.ps1
+LITERAL_RESULT:
+BACKUP PASS: E:\RoseKhlifa.com\blog\deploy\artifacts\server-source-20261019T174437Z.tar.gz
+
+EXIT_STATUS: 0
+RESULT: real server source backup downloaded; excludes dependencies/cache.
+
+LOCAL DEPLOYMENT GUARD
+COMMAND: & .\deploy\Deploy.ps1 -SkipBuild
+INPUT: online authoring is active.
+LITERAL_RESULT: Online writing is active. Publish using the browser editor. Back up and review server source before a local deployment; -AllowLocalContentReplace explicitly permits replacing the public site with local content.
+EXPECTED_SCRIPT_STATUS: terminated before packaging or upload; checked catch assertion exit0.
+RESULT: old local source does not silently replace server-authored articles.
+
+All four claimed artifacts were reopened locally. Root rollback is executable mode0755 and was opened on the server; production state remains active.

@@ -1,0 +1,36 @@
+name: rosekhlifa-blog-admin
+
+services:
+  admin:
+    image: ${ADMIN_NGINX_IMAGE:-nginx@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5}
+    container_name: rosekhlifa-blog-admin
+    entrypoint: ["nginx"]
+    command: ["-g", "daemon off;"]
+    user: "101:101"
+    network_mode: host
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /opt/rosekhlifa-blog/deploy/admin/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt/rosekhlifa-blog/deploy/admin:/srv/admin:ro
+      - /opt/rosekhlifa-blog/publish-state:/srv/publish-state:ro
+      - /opt/rosekhlifa-blog/admin-secrets/htpasswd:/etc/admin/htpasswd:ro
+      - /opt/rosekhlifa-blog/admin-secrets/server.crt:/etc/admin/server.crt:ro
+      - /opt/rosekhlifa-blog/admin-secrets/server.key:/etc/admin/server.key:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-q", "--spider", "https://127.0.0.1:18181/_admin-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

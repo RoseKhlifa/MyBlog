@@ -2,3 +2,8 @@
 
 # Content should not affect language stats
 src/content/** linguist-documentation
+
+# Keep recorded output, patch context and original server snapshots byte-faithful.
+deploy/**/*.patch whitespace=-blank-at-eol
+deploy/**/VERIFICATION.txt whitespace=-blank-at-eol
+deploy/**/evidence/** whitespace=-blank-at-eol

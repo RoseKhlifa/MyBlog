@@ -1,0 +1,28 @@
+[Unit]
+Description=RoseKhlifa blog online content publisher
+Wants=network-online.target
+After=network-online.target docker.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=rosekhlifa-blog
+Group=rosekhlifa-blog
+WorkingDirectory=/opt/rosekhlifa-blog
+ExecStart=/usr/bin/python3 /opt/rosekhlifa-blog/deploy/admin/publisher.py
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONUNBUFFERED=1
+Environment=HOME=/opt/rosekhlifa-blog/editor-home
+Environment=ASTRO_TELEMETRY_DISABLED=1
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+UMask=0022
+ProtectHome=true
+PrivateTmp=true
+ProtectSystem=full
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

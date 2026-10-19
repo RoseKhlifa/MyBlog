@@ -1,0 +1,24 @@
+diff --git a/deploy/admin/evidence/Deploy.before-online.ps1 b/deploy/Deploy.ps1
+index aee2016..4768b06 100644
+--- a/deploy/admin/evidence/Deploy.before-online.ps1
++++ b/deploy/Deploy.ps1
+@@ -2,6 +2,7 @@
+ param(
+     [switch]$SkipBuild,
+     [switch]$SkipInstall,
++    [switch]$AllowLocalContentReplace,
+     [ValidatePattern('^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$')]
+     [string]$ReleaseId
+ )
+@@ -15,6 +16,11 @@ function Assert-NativeSuccess([string]$Step) {
+ }
+ try {
+     Set-Location -LiteralPath $projectRoot
++    $onlineMode = & ssh -o BatchMode=yes -o ConnectTimeout=15 $sshTarget "if [ -f '$remoteRoot/.online-authoring' ]; then echo active; else echo inactive; fi"
++    Assert-NativeSuccess 'Check server authoring mode'
++    if (($onlineMode -join '').Trim() -eq 'active' -and -not $AllowLocalContentReplace) {
++        throw 'Online writing is active. Publish using the browser editor. Back up and review server source before a local deployment; -AllowLocalContentReplace explicitly permits replacing the public site with local content.'
++    }
+     if (-not $SkipBuild) {
+         & (Join-Path $PSScriptRoot 'Build.ps1') -SkipInstall:$SkipInstall
+     } else {

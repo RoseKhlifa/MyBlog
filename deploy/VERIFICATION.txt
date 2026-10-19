@@ -1,0 +1,158 @@
+ROSEKHLIFA BLOG FIRST DEPLOYMENT - VERIFIED 2026-10-20 Asia/Shanghai
+
+PUBLIC_URL: http://51.83.101.143:18180
+SITE_URL: https://blog.rosekhlifa.com
+LOCAL_ROOT: E:\RoseKhlifa.com\blog
+SERVER_ROOT: /opt/rosekhlifa-blog
+SERVICE: Docker Compose project rosekhlifa-blog; container rosekhlifa-blog
+PORT: 0.0.0.0:18180 -> 8080/tcp
+SOURCE: https://github.com/cxro/astro-whono
+SOURCE_REVISION: b6bc4f9d484528cc522c7c1a5cab9cc425c91918
+CHANGED_BRANCH: deploy/first-deployment
+CHANGED_FIELD: deploy/site.env SITE_URL: empty -> https://blog.rosekhlifa.com
+CODE_BRANCH: site.config.mjs hasSiteUrl false -> true; resolved URL example.invalid -> production domain
+UPSTREAM_THEME_SOURCE: unchanged
+RELEASE: 20261019T171705Z-b6bc4f9d4845 (UTC identifier)
+RELEASE_ARCHIVE_SHA256: 716f79196bd7ae40594b96f498b96e68b0e1e816190d6bc9e1b3a51db9ada36f
+HOMEPAGE_SHA256: 322a54058814d0852cf0d6a7c46f48f20650531a498fce31b0e763626e470e90
+CONTENT: original Whono theme demonstration content, not personal biography or original user articles.
+
+ARTIFACTS
+MODIFIED_FILE: E:\RoseKhlifa.com\blog\deploy\site.env
+DIFF_FILE: E:\RoseKhlifa.com\blog\deploy\DIFF_FILE.patch
+VERIFICATION: E:\RoseKhlifa.com\blog\deploy\VERIFICATION.txt
+ROLLBACK: E:\RoseKhlifa.com\blog\deploy\ROLLBACK.sh
+SERVER_ROLLBACK: /opt/rosekhlifa-blog/deploy/ROLLBACK.sh mode 0755
+DOCUMENTATION: E:\RoseKhlifa.com\blog\DEPLOYMENT.md
+ORIGINAL_ENV: E:\RoseKhlifa.com\blog\deploy\evidence\site.original.env
+ORIGINAL_ENV_SHA256: cfbd2d1ce43ae4e405e9dbda63506285f7b786aedea4ab16622d3b9ff8adc346
+MODIFIED_ENV_SHA256: b4e20445bf650b35f8366c50beeef2852d9b88d686308abeebb2d55aaf48cdfa
+ORIGINAL_SITE_CONFIG: E:\RoseKhlifa.com\blog\deploy\evidence\site.config.original.mjs
+ORIGINAL_AND_CURRENT_SITE_CONFIG_SHA256: 374b8bae1d8f37161b173e05b7f63ca7fa936c3f50350806315c7e6ced373d3f
+
+All local commands below use WORKDIR E:\RoseKhlifa.com\blog.
+
+BASELINE
+COMMAND: node deploy/check-site.mjs deploy/evidence/site.original.env
+INPUT: SITE_URL= (empty); ASTRO_WHONO_BASE_PATH=/; original upstream site.config.mjs
+LITERAL_STDOUT:
+{"SITE_URL":"","hasSiteUrl":false,"resolvedUrl":"https://example.invalid","base":"/"}
+
+EXIT_STATUS: 0
+RESULT: hasSiteUrl=false; fallback URL https://example.invalid; original bytes preserved.
+
+MODIFIED
+COMMAND: node deploy/check-site.mjs deploy/site.env
+INPUT: SITE_URL=https://blog.rosekhlifa.com; ASTRO_WHONO_BASE_PATH=/; same upstream site.config.mjs
+LITERAL_STDOUT:
+{"SITE_URL":"https://blog.rosekhlifa.com","hasSiteUrl":true,"resolvedUrl":"https://blog.rosekhlifa.com","base":"/"}
+
+EXIT_STATUS: 0
+RESULT: hasSiteUrl=true; production URL https://blog.rosekhlifa.com; modified site.env remains in place.
+
+PRODUCTION BUILD
+COMMAND: volta run --node 22.22.0 pwsh -NoProfile -File deploy/Build.ps1 -SkipInstall
+INPUT: npm ci already completed; SITE_URL=https://blog.rosekhlifa.com; ASTRO_WHONO_BASE_PATH=/
+EXIT_STATUS: 0
+LITERAL_OUTPUT_EXCERPTS:
+Result (313 files):
+- 0 errors
+- 0 warnings
+- 0 hints
+[check:admin-content-source-boundary] OK
+ Test Files  50 passed (50)
+      Tests  396 passed (396)
+[build] 37 page(s) built in 4.82s
+Production artifact verification passed.
+BUILD PASS: production canonical/RSS/sitemap/robots; homepage/article assets use the current origin
+RESULT: static dist; canonical/OG/RSS/sitemap/robots use production domain; runtime assets use current origin.
+Build.ps1 now automatically selects .nvmrc Node 22.22.0 through Volta if the active runtime differs.
+The initial Node 25.9.0 trial had 5 image-upload test timeouts (391 passed / 5 failed, exit 1).
+The repository-specified Node 22.22.0 complete rerun passed without changing upstream code or tests.
+Build logs: deploy/artifacts/build.log; initial trial: deploy/artifacts/build-node25.log.
+
+DEPLOY
+COMMAND: & .\deploy\Deploy.ps1 -SkipBuild
+INPUT: dist/; release 20261019T171705Z-b6bc4f9d4845; SHA256 716f79196bd7ae40594b96f498b96e68b0e1e816190d6bc9e1b3a51db9ada36f
+LITERAL_RESULT:
+Activated release=20261019T171705Z-b6bc4f9d4845 current=releases/20261019T171705Z-b6bc4f9d4845 previous=absent service=healthy
+DEPLOY PASS: 20261019T171705Z-b6bc4f9d4845 http://51.83.101.143:18180
+EXIT_STATUS: 0
+Final scripts and nginx config were synchronized after isolated failure-path tests.
+Nginx configuration validation and container restart both succeeded with the final files.
+
+ROLLBACK - INDEPENDENT COPY, PRODUCTION NOT SWITCHED
+EXACT_COMMAND: ssh -o BatchMode=yes -o ConnectTimeout=15 root@51.83.101.143 'bash /opt/rosekhlifa-blog/deploy/test-rollback.sh'
+INPUT: independent baseline/modified release copies; baseline site.original.env and modified site.env; real ROLLBACK.sh --root TEMP_ROOT --no-service
+LITERAL_STDOUT:
+Rolled back current=releases/baseline previous=releases/modified service=skipped
+{"SITE_URL":"","hasSiteUrl":false,"resolvedUrl":"https://example.invalid","base":"/"}
+ROLLBACK PASS: original SITE_URL= restored; sha256=cfbd2d1ce43ae4e405e9dbda63506285f7b786aedea4ab16622d3b9ff8adc346; production SITE_URL=https://blog.rosekhlifa.com unchanged
+ROLLBACK COPY: current=releases/baseline previous=releases/modified; original baseline index.html restored; service=skipped
+Test copy retained at /tmp/rosekhlifa-blog-rollback.ysb79R
+EXIT_STATUS: 0
+RESTORED_BEHAVIOR: current points to releases/baseline, original homepage text is restored, SITE_URL is empty, hasSiteUrl=false, URL fallback is https://example.invalid, original SHA256 matches.
+PRODUCTION_STATUS: current remains releases/20261019T171705Z-b6bc4f9d4845; SITE_URL=https://blog.rosekhlifa.com; running/healthy.
+First deployment has no previous production release; future updates populate previous automatically.
+Additional injected restart failures and rejected archives: deploy/evidence/shell-tests.txt.
+
+PUBLIC VERIFICATION AFTER FINAL NGINX CONFIG AND RESTART
+EXACT_COMMAND: node deploy/verify-public.mjs http://51.83.101.143:18180
+INPUT: requests made from this Windows workstation to public IP/port; homepage compared with local dist/index.html
+LITERAL_STDOUT:
+200 / text/html 25201 bytes
+200 /archive/markdown-guide/ text/html 48498 bytes
+200 /_health text/plain 3 bytes
+200 /rss.xml text/xml 2481 bytes
+200 /archive/rss.xml text/xml 2460 bytes
+200 /essay/rss.xml text/xml 2469 bytes
+200 /sitemap-index.xml text/xml 190 bytes
+200 /sitemap-0.xml text/xml 1971 bytes
+200 /robots.txt text/plain 77 bytes
+200 /_astro/global.Cp72ITzf.css text/css 45358 bytes
+200 /_astro/hero.DZf7jsGa_2cGdYb.png image/png 271807 bytes
+200 /_astro/BaseLayout.astro_astro_type_script_index_0_lang.z2d_3HBZ.js application/javascript 4420 bytes
+200 /_astro/article.D6eyYK2t.css text/css 17700 bytes
+200 /_astro/ArticleLayout.astro_astro_type_script_index_0_lang.BPtGR8J2.js application/javascript 157 bytes
+200 /fonts/lxgw-wenkai-lite-latin.woff2 font/woff2 32296 bytes
+200 /fonts/lxgw-wenkai-lite-cjk-common.woff2 font/woff2 815380 bytes
+200 /fonts/lxgw-wenkai-lite-cjk-ext.woff2 font/woff2 504172 bytes
+200 /fonts/noto-serif-sc-400-latin.woff2 font/woff2 46188 bytes
+200 /fonts/noto-serif-sc-400-cjk-common.woff2 font/woff2 650424 bytes
+200 /fonts/noto-serif-sc-400-cjk-ext.woff2 font/woff2 1333304 bytes
+200 /fonts/noto-serif-sc-600-latin.woff2 font/woff2 46328 bytes
+200 /fonts/noto-serif-sc-600-cjk-common.woff2 font/woff2 660928 bytes
+200 /fonts/noto-serif-sc-600-cjk-ext.woff2 font/woff2 1353224 bytes
+301 /about -> /about/ (origin preserved)
+404 /__deployment_missing_page__ text/html 146 bytes
+PUBLIC PASS: 24 responses; homepage SHA256 matches local dist; canonical/RSS use https://blog.rosekhlifa.com
+
+EXIT_STATUS: 0
+RESULT: homepage/article/assets/fonts/RSS/sitemap/robots healthy; true 404; directory redirect preserves origin.
+
+FINAL SERVER STATE
+COMMANDS: docker inspect rosekhlifa-blog (selected status fields); systemctl is-enabled docker; systemctl is-active docker; readlink current; stat executable scripts; ss port18180; sha256sum deployment files; docker exec rosekhlifa-blog nginx -t; docker ps 1Panel filter
+LITERAL_STDOUT_AND_NGINX_DIAGNOSTICS:
+state=running health=healthy restart=unless-stopped image=nginx@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5
+enabled
+active
+releases/20261019T171705Z-b6bc4f9d4845
+755 /opt/rosekhlifa-blog/deploy/ROLLBACK.sh
+755 /opt/rosekhlifa-blog/deploy/activate.sh
+LISTEN 0      4096   0.0.0.0:18180 0.0.0.0:*
+f67f2aa47f45074cf558bb37a5d1b9a7b8fe1ef7b9439c50b5c81844cf9ecd6a  /opt/rosekhlifa-blog/deploy/compose.yaml
+f8bafbb0af3e6a3550a01fa7fab8c5fa9ea176b6b6f30cec7440774290941b20  /opt/rosekhlifa-blog/deploy/nginx.conf
+3b555c5a82e41e3962935ca4cd741af08753977c68bc91edac293f7db6834c31  /opt/rosekhlifa-blog/deploy/activate.sh
+99fc75c18524475491713bba5f7c03a942e20ef928df4d64faac4a5442d22980  /opt/rosekhlifa-blog/deploy/ROLLBACK.sh
+1Panel-openresty-Y6Yd Up 3 months
+
+EXIT_STATUS: 0
+RESULT: container running/healthy, restart=unless-stopped, Docker enabled/active, port18180 listening, final remote/local deployment file hashes match.
+Existing 1Panel OpenResty remains up (host network); reverse proxy upstream can be http://127.0.0.1:18180.
+The container was restarted and reverified. The entire host was not rebooted.
+DNS and TLS for blog.rosekhlifa.com are left for the user's 1Panel configuration as requested.
+
+UPDATE: from E:\RoseKhlifa.com\blog run & .\deploy\Deploy.ps1
+ROLLBACK: ssh root@51.83.101.143 "bash /opt/rosekhlifa-blog/deploy/ROLLBACK.sh"
+POST_ROLLBACK_CHECK: node deploy/verify-public.mjs http://51.83.101.143:18180 --skip-local-hash
+Full operations guide: E:\RoseKhlifa.com\blog\DEPLOYMENT.md

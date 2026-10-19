@@ -1,8 +1,36 @@
-# astro-whono
+# MyBlog
+
+RoseKhlifa's personal blog, based on [cxro/astro-whono](https://github.com/cxro/astro-whono) and maintained here for site content, deployment and further customization.
+
+## Relationship to upstream
+
+- **Upstream:** [cxro/astro-whono](https://github.com/cxro/astro-whono), created by **cxro / Whono**.
+- **This repository:** [RoseKhlifa/MyBlog](https://github.com/RoseKhlifa/MyBlog).
+- **Initial baseline:** upstream version `0.5.0`, commit [`b6bc4f9d484528cc522c7c1a5cab9cc425c91918`](https://github.com/cxro/astro-whono/commit/b6bc4f9d484528cc522c7c1a5cab9cc425c91918). The upstream Git history is preserved.
+- **License and attribution:** the upstream [MIT License](LICENSE), including `Copyright (c) 2026 cxro`, remains intact. The original theme design, components, typography and demonstration content are credited to upstream.
+
+This repository adds independent Docker static hosting, 1Panel administration routes, a web login, server-based article and image editing, automatic builds and publishing, source backups and release rollback. Some upstream demonstration content is still present and will be replaced with personal content over time.
+
+## Site and maintenance
+
+- Blog: [blog.rosekhlifa.com](https://blog.rosekhlifa.com/)
+- Writing console: [blog.rosekhlifa.com/admin/](https://blog.rosekhlifa.com/admin/)
+- [Online writing guide](ONLINE-WRITING.md) and [deployment guide](DEPLOYMENT.md) describe this site's setup.
+- `deploy/` contains this repository's build, deployment, administration and verification scripts.
+
+Use Node.js `22.22.0` from `.nvmrc`, then run `npm ci` and `npm run dev`. Local writing is available at `http://localhost:4321/admin/content/`. Production builds use `SITE_URL=https://blog.rosekhlifa.com`. Back up and synchronize the server's latest source before updating code while online authoring is active.
+
+Git remote `origin` points to this repository and `upstream` points to the original theme. Review upstream changes before merging, then run `npm run verify`.
+
+## Original theme documentation
+
+The upstream usage guide is retained below. Use the linked site guides above for this repository's deployment and online writing workflow.
+
+### astro-whono
 
 [中文](README.md) | [English](README.en.md)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/cxro/astro-whono/ci.yml?style=flat&label=CI&labelColor=2E3440&color=A3BE8C&logo=githubactions&logoColor=ECEFF4)](https://github.com/cxro/astro-whono/actions/workflows/ci.yml)  [![Node](https://img.shields.io/badge/Node-%3E%3D22.12.0-81A1C1?style=flat&labelColor=2E3440&logo=nodedotjs&logoColor=ECEFF4)](README.en.md#requirements)  [![Astro](https://img.shields.io/github/package-json/dependency-version/cxro/astro-whono/astro?branch=main&style=flat&label=Astro&labelColor=2E3440&color=BC52EE&logo=astro&logoColor=ECEFF4)](https://docs.astro.build/)  [![License](https://img.shields.io/badge/License-MIT-4C566A?style=flat&labelColor=2E3440&logo=opensourceinitiative&logoColor=ECEFF4)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/RoseKhlifa/MyBlog/ci.yml?style=flat&label=CI&labelColor=2E3440&color=A3BE8C&logo=githubactions&logoColor=ECEFF4)](https://github.com/RoseKhlifa/MyBlog/actions/workflows/ci.yml)  [![Node](https://img.shields.io/badge/Node-%3E%3D22.12.0-81A1C1?style=flat&labelColor=2E3440&logo=nodedotjs&logoColor=ECEFF4)](README.en.md#requirements)  [![Astro](https://img.shields.io/github/package-json/dependency-version/RoseKhlifa/MyBlog/astro?branch=main&style=flat&label=Astro&labelColor=2E3440&color=BC52EE&logo=astro&logoColor=ECEFF4)](https://docs.astro.build/)  [![License](https://img.shields.io/badge/License-MIT-4C566A?style=flat&labelColor=2E3440&logo=opensourceinitiative&logoColor=ECEFF4)](LICENSE)
 
 **✨ astro-whono supports visual writing and live preview in the local admin console**
 

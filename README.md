@@ -1,8 +1,52 @@
-# astro-whono
+# MyBlog
+
+RoseKhlifa 的个人博客项目，基于 [cxro/astro-whono](https://github.com/cxro/astro-whono) 主题搭建，并在此基础上持续二次开发。
+
+## 与上游项目的关系
+
+- **上游仓库**：[cxro/astro-whono](https://github.com/cxro/astro-whono)，原作者为 **cxro / Whono**。
+- **本仓库**：[RoseKhlifa/MyBlog](https://github.com/RoseKhlifa/MyBlog)，用于维护个人博客内容、部署配置和后续定制。
+- **初始基线**：上游 `0.5.0`，提交 [`b6bc4f9d484528cc522c7c1a5cab9cc425c91918`](https://github.com/cxro/astro-whono/commit/b6bc4f9d484528cc522c7c1a5cab9cc425c91918)。本仓库保留上游 Git 提交历史。
+- **许可与署名**：继续遵循上游的 [MIT License](LICENSE)，保留 `Copyright (c) 2026 cxro` 和完整许可文本。原主题的设计、组件、排版和默认示例内容归功于上游项目。
+
+本仓库在原主题基础上增加了独立 Docker 静态部署、1Panel 域名管理路由、网页登录、服务器文章与图片管理、自动构建发布、源文件备份及发布回滚。当前仍保留部分上游默认示例内容，后续会逐步替换为个人内容。
+
+## 访问与维护
+
+- 博客：[blog.rosekhlifa.com](https://blog.rosekhlifa.com/)
+- 写作后台：[blog.rosekhlifa.com/admin/](https://blog.rosekhlifa.com/admin/)
+- [在线写作说明](ONLINE-WRITING.md)：文章、图片、草稿、自动发布和备份。
+- [部署与回滚说明](DEPLOYMENT.md)：服务、构建参数和部署记录。
+- `deploy/`：本仓库的构建、部署、管理入口和验证脚本。
+
+开发环境使用 `.nvmrc` 指定的 Node.js `22.22.0`：
+
+```bash
+npm ci
+npm run dev
+```
+
+本地写作入口为 `http://localhost:4321/admin/content/`。生产构建需设置 `SITE_URL=https://blog.rosekhlifa.com`。服务器在线写作模式下，以服务器保存的内容为准；代码更新前先按在线写作说明备份并同步最新源文件。
+
+Git 远程约定：`origin` 指向本仓库，`upstream` 指向原主题。同步上游时先审查差异，再合并并运行检查：
+
+```bash
+git fetch upstream
+git switch main
+git merge upstream/main
+npm ci
+npm run verify
+```
+
+## 上游主题使用文档
+
+以下保留上游主题的使用介绍与致谢；本站的部署方式和在线后台操作以本仓库上方链接的说明为准。
+
+### astro-whono
 
 [中文](README.md) | [English](README.en.md)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/cxro/astro-whono/ci.yml?style=flat&label=CI&labelColor=2E3440&color=A3BE8C&logo=githubactions&logoColor=ECEFF4)](https://github.com/cxro/astro-whono/actions/workflows/ci.yml)  [![Node](https://img.shields.io/badge/Node-%3E%3D22.12.0-81A1C1?style=flat&labelColor=2E3440&logo=nodedotjs&logoColor=ECEFF4)](https://github.com/cxro/astro-whono#%E7%8E%AF%E5%A2%83%E8%A6%81%E6%B1%82)  [![Astro](https://img.shields.io/github/package-json/dependency-version/cxro/astro-whono/astro?branch=main&style=flat&label=Astro&labelColor=2E3440&color=BC52EE&logo=astro&logoColor=ECEFF4)](https://docs.astro.build/)  [![License](https://img.shields.io/badge/License-MIT-4C566A?style=flat&labelColor=2E3440&logo=opensourceinitiative&logoColor=ECEFF4)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/RoseKhlifa/MyBlog/ci.yml?style=flat&label=CI&labelColor=2E3440&color=A3BE8C&logo=githubactions&logoColor=ECEFF4)](https://github.com/RoseKhlifa/MyBlog/actions/workflows/ci.yml)  [![Node](https://img.shields.io/badge/Node-%3E%3D22.12.0-81A1C1?style=flat&labelColor=2E3440&logo=nodedotjs&logoColor=ECEFF4)](https://github.com/cxro/astro-whono#%E7%8E%AF%E5%A2%83%E8%A6%81%E6%B1%82)  [![Astro](https://img.shields.io/github/package-json/dependency-version/RoseKhlifa/MyBlog/astro?branch=main&style=flat&label=Astro&labelColor=2E3440&color=BC52EE&logo=astro&logoColor=ECEFF4)](https://docs.astro.build/)  [![License](https://img.shields.io/badge/License-MIT-4C566A?style=flat&labelColor=2E3440&logo=opensourceinitiative&logoColor=ECEFF4)](LICENSE)
 
 **✨ astro-whono 支持本地后台可视化预览写作**
 

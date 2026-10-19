@@ -27,6 +27,16 @@ Thumbs.db
 # Misc
 *.tsbuildinfo
 .trash/
+__pycache__/
+*.py[cod]
+
+# Authentication files are generated during deployment, never committed.
+deploy/**/admin-secrets/
+deploy/**/session-auth/
+deploy/**/secrets/
+deploy/**/htpasswd
+deploy/**/*.key
+deploy/**/*.pem
 
 # Font sources (local only)
 tools/fonts-src/

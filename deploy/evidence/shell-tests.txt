@@ -1,0 +1,119 @@
+Blog deployment shell verification
+Date: 2026-10-20 (Asia/Shanghai)
+Scope: activate.sh, ROLLBACK.sh, compose.yaml, nginx.conf.
+Environment: Windows host, GNU Bash 5.2.37 / Git for Windows.
+MSYS=winsymlinks:nativestrict was enabled for real filesystem symlinks.
+All fixture paths below are temporary copies; Docker calls were mocked.
+Real server/container/public HTTP validation is recorded separately by the deployer.
+
+SYNTAX AND ENCODING
+Commands:
+  bash -n /e/RoseKhlifa.com/blog/deploy/activate.sh
+  bash -n /e/RoseKhlifa.com/blog/deploy/ROLLBACK.sh
+Result: no output, exit 0 for each command.
+All four deployment files were reopened as bytes: UTF-8 BOM absent, CR count 0.
+
+BASELINE / MODIFIED / ROLLBACK
+Fixture root: /tmp/tmp.X5mZaAm86O
+Each archive was created with tar -czf incoming/RELEASE.tar.gz -C payload .
+SHA256 arguments were computed with sha256sum on the corresponding archive.
+Baseline input: payload/index.html contains exactly "baseline-one\n".
+Command:
+  bash /e/RoseKhlifa.com/blog/deploy/activate.sh --root /tmp/tmp.X5mZaAm86O --no-service release-one "$hash"
+Literal output:
+  Activated release=release-one current=releases/release-one previous=absent service=skipped
+Exit: 0
+Modified input: payload/index.html contains exactly "modified-two\n".
+Command:
+  bash /e/RoseKhlifa.com/blog/deploy/activate.sh --root /tmp/tmp.X5mZaAm86O --no-service release-two "$hash"
+Literal output:
+  Activated release=release-two current=releases/release-two previous=releases/release-one service=skipped
+Exit: 0
+Command:
+  bash /e/RoseKhlifa.com/blog/deploy/ROLLBACK.sh --root /tmp/tmp.X5mZaAm86O --no-service
+Literal output:
+  Rolled back current=releases/release-one previous=releases/release-two service=skipped
+  PASS baseline/modified/rollback content restored SHA256=2f8cf8eedb34e6a0d15f6749ba0cf4e6b6e236753e53683c045716e06cc64950
+Exit: 0
+Assertions: modified content differs; rollback content SHA256 equals baseline;
+current and previous are real relative symlinks, not copied directories.
+
+FAILURE INJECTION: ACTIVATION WITH AN EXISTING RELEASE
+Fixture root: /tmp/tmp.X5mZaAm86O
+The mock docker executable returns exit 17 for compose restart while current
+targets releases/bad-release; it returns running/healthy for restored releases.
+Input: bad-release archive has payload/index.html "bad-three\n".
+Command:
+  bash /e/RoseKhlifa.com/blog/deploy/activate.sh --root /tmp/tmp.X5mZaAm86O bad-release "$hash"
+Literal output:
+  INJECTED restart failure for bad-release
+  Activation failed; restored current=releases/release-one previous=releases/release-two restoration_status=0
+Exit: 17
+Assertions: current=releases/release-one; previous=releases/release-two;
+releases/bad-release still exists; restored service mock is healthy.
+
+FAILURE INJECTION: ROLLBACK
+Command:
+  bash /e/RoseKhlifa.com/blog/deploy/ROLLBACK.sh --root /tmp/tmp.X5mZaAm86O bad-release
+Literal output:
+  INJECTED restart failure for bad-release
+  Rollback failed; restored current=releases/release-one previous=releases/release-two restoration_status=0
+Exit: 17
+Assertions: both original links are restored; restored service mock is healthy.
+
+FAILURE INJECTION: FIRST ACTIVATION (FINAL VERIFIED FIX)
+Fixture root: /tmp/tmp.HqohWE7Hqh
+Input: archive bad-final.tar.gz; index.html contains exactly "one\n".
+Archive SHA256: eb1324bc6b9f57e17f71380b3b0ede7e9ccd4018f51591044d6c4e7360be1af2
+Mock: all compose calls exit 0 except restart, which exits 17; every call is logged.
+Command:
+  bash /e/RoseKhlifa.com/blog/deploy/activate.sh --root /tmp/tmp.HqohWE7Hqh bad-final eb1324bc6b9f57e17f71380b3b0ede7e9ccd4018f51591044d6c4e7360be1af2
+Literal output:
+  INJECTED restart failure
+  Activation failed; restored current=absent previous=absent restoration_status=0
+Captured exit: 17
+Assertion output:
+  PASS first activation failure rollback status verified
+Assertions: current is absent; previous is absent; releases/bad-final remains;
+last Docker call is compose ... stop blog, with project rosekhlifa-blog.
+Implementation correction verified here: an empty-target set_link explicitly
+returns 0, so EXIT traps do not inherit the original failure status after a
+successful link removal. Earlier tests exposed a misleading restoration_status=1;
+the final source and command above verified restoration_status=0.
+
+INVALID INPUT AND ARCHIVE TESTS
+Fixture root: /tmp/tmp.CClxdp8rS6
+1. Archive one.tar.gz has SHA256
+   eb1324bc6b9f57e17f71380b3b0ede7e9ccd4018f51591044d6c4e7360be1af2.
+   The SHA256 argument was 64 zeros.
+   Literal output:
+     ERROR: Archive SHA256 mismatch: eb1324bc6b9f57e17f71380b3b0ede7e9ccd4018f51591044d6c4e7360be1af2
+   Exit: 1. No current link or release directory was created.
+2. Archive linked.tar.gz includes a symlink forbidden-link -> index.html.
+   Literal output:
+     ERROR: Archive may contain only regular files and directories.
+   Exit: 1. current remained releases/one; releases/linked was absent.
+3. Archive traversal.tar.gz was made with
+   tar -czf incoming/traversal.tar.gz --transform='s|index.html|../escape.html|' -C payload .
+   Literal output:
+     ERROR: Archive contains parent-directory traversal: ./../escape.html
+   Exit: 1. current remained releases/one; no escape.html was created.
+4. A default rollback after only the first activation produced:
+     ERROR: No previous release exists; pass an explicit release ID.
+   Exit: 1. current remained releases/one.
+5. Release ID ../escape produced:
+     ERROR: Invalid release ID.
+   Exit: 1. Existing links were unchanged.
+6. Reusing existing ID release-one produced:
+     ERROR: Release already exists: release-one
+   Exit: 1. The existing release was not overwritten.
+7. A missing release-missing.tar.gz produced:
+     ERROR: Archive is missing or is a symlink: /tmp/tmp.X5mZaAm86O/incoming/release-missing.tar.gz
+   Exit: 1. Existing links were unchanged.
+
+FINAL NGINX CONFIGURATION
+The actual Astro dist does not include 404.html. The final nginx.conf therefore
+uses nginx's native 404 response, without an error_page redirect to a missing file.
+try_files returns a real 404 for absent paths. /_health returns "ok\n" as text/plain.
+The container health check fetches /, so readiness still depends on the home page.
+Configuration changes are validated against real Docker/nginx by the deployer.

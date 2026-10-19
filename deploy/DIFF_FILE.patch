@@ -1,0 +1,8 @@
+diff --git a/deploy/evidence/site.original.env b/deploy/site.env
+index 135761a..cd821b4 100644
+--- a/deploy/evidence/site.original.env
++++ b/deploy/site.env
+@@ -1,2 +1,2 @@
+-SITE_URL=
++SITE_URL=https://blog.rosekhlifa.com
+ ASTRO_WHONO_BASE_PATH=/
