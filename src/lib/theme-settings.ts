@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { site as legacySite } from '../../site.config.mjs';
 import { asThemeFontIdForRole, type ThemeFontId } from './fonts/registry';
+import { getGeneratedSiteFaviconLinks } from './site-favicon-assets.mjs';
 import {
   getHeroImageLocalFilePath,
   getSiteFaviconLocalFilePath,
@@ -1781,6 +1782,7 @@ export const getSiteFaviconLinks = (favicon: SiteFaviconSettings): SiteFaviconLi
   const svg = resolveRenderableFaviconPath(favicon.svg);
   const png = resolveRenderableFaviconPath(favicon.png);
   const appleTouchIcon = resolveRenderableFaviconPath(favicon.appleTouchIcon);
+  const generated = getGeneratedSiteFaviconLinks({ svg, png });
 
   const links: SiteFaviconLink[] = [];
   if (!svg && !png) {
@@ -1792,7 +1794,9 @@ export const getSiteFaviconLinks = (favicon: SiteFaviconSettings): SiteFaviconLi
     if (svg) {
       links.push({ rel: 'icon', type: 'image/svg+xml', sizes: 'any', href: svg });
     }
-    if (png) {
+    if (generated) {
+      links.push(...generated);
+    } else if (png) {
       const sizes = getSiteFaviconSizesFromPath(png);
       links.push({ rel: 'icon', type: 'image/png', ...(sizes ? { sizes } : {}), href: png });
     }

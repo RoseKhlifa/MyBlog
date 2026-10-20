@@ -40,3 +40,6 @@ deploy/**/*.pem
 
 # Font sources (local only)
 tools/fonts-src/
+# Generated browser icon variants and compatibility fallback.
+/public/images/site/generated/
+/public/favicon.ico

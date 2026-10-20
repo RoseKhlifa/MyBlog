@@ -140,6 +140,16 @@ export const createAdminFaviconUploads = ({
   };
 
   const applyUploadedPath = (slot: FaviconUploadSlot, nextPath: string): void => {
+    // The tab-icon upload replaces the hidden SVG selection as well, so an
+    // older SVG cannot compete with the PNG the author has just chosen.
+    if (slot === 'png') {
+      const svgInput = root.querySelector<HTMLInputElement>('#site-favicon-svg');
+      if (svgInput?.value) {
+        svgInput.value = '';
+        svgInput.dispatchEvent(new Event('input', { bubbles: true }));
+        svgInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
     const input = inputs[slot];
     input.value = nextPath;
     input.dispatchEvent(new Event('input', { bubbles: true }));

@@ -4,6 +4,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import svelte from '@astrojs/svelte';
 import { createPublicMarkdownConfig } from './src/plugins/markdown-pipeline.mjs';
+import { siteFaviconAssetsIntegration } from './src/lib/site-favicon-assets.mjs';
 import {
   getSelectedAstroApiFonts,
   resolveTypographyFromRawUiSettings
@@ -62,6 +63,7 @@ const isExcludedSitemapPathname = (pathname) =>
 
 const isExcludedSitemapEntry = (page) => isExcludedSitemapPathname(normalizeSitemapPathname(page));
 const integrations = [
+  siteFaviconAssetsIntegration(),
   ...(!isProductionBuild ? [svelte()] : []),
   ...(hasSiteUrl ? [sitemap({ filter: (page) => !isExcludedSitemapEntry(page) })] : [])
 ];
