@@ -47,4 +47,17 @@ describe('content queries', () => {
 
     expect(entries.map((entry) => entry.id)).toEqual(['existing']);
   });
+
+  it('never returns private essays through public getters, even when drafts are requested', async () => {
+    const filePath = path.join(tempRoot, 'entry.md');
+    await writeFile(filePath, '# present');
+    getCollectionMock.mockResolvedValue([
+      { id: 'legacy-public', filePath, data: { draft: false } },
+      { id: 'public', filePath, data: { draft: false, visibility: 'public' } },
+      { id: 'private', filePath, data: { draft: false, visibility: 'private' } },
+      { id: 'private-draft', filePath, data: { draft: true, visibility: 'private' } }
+    ] as never);
+    const entries = await getPublished('essay', { includeDraft: true });
+    expect(entries.map((entry) => entry.id)).toEqual(['legacy-public', 'public']);
+  });
 });

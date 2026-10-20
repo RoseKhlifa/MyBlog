@@ -44,6 +44,7 @@ const cloneEssayValues = (value: AdminEssayEditorValues): AdminEssayEditorValues
   updatedAt: value.updatedAt,
   tagsText: value.tagsText,
   draft: value.draft,
+  visibility: value.visibility ?? 'public',
   archive: value.archive,
   slug: value.slug,
   cover: value.cover,
@@ -108,6 +109,7 @@ const ESSAY_FRONTMATTER_ISSUE_PATHS = new Set([
   'updatedAt',
   'description',
   'tags',
+  'visibility',
   'slug',
   'badge',
   'cover'
@@ -137,6 +139,7 @@ const ESSAY_FIELD_LABELS: Readonly<Record<string, string>> = {
   updatedAt: '更新日期',
   tags: '标签',
   draft: '草稿状态',
+  visibility: '可见性',
   archive: '归档状态',
   slug: '链接别名',
   cover: '封面图',

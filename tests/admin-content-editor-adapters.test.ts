@@ -9,12 +9,40 @@ import {
 import type { AdminAboutEditorValues } from '../src/lib/admin-console/content-about-contract';
 import type {
   AdminBitsEditorValues,
+  AdminEssayEditorValues,
   AdminContentWriteCollectionKey,
   AdminMemoEditorValues
 } from '../src/lib/admin-console/content-shared';
 import { getAdminContentCollectionCapability } from '../src/lib/admin-console/content-collections';
 
 describe('content editor adapters', () => {
+  it('preserves private visibility when cloning essay values and detects visibility-only changes', () => {
+    const adapter = getContentEditorAdapter('essay');
+    const privateValues: AdminEssayEditorValues = {
+      title: 'Private article',
+      description: '',
+      date: '2026-10-20',
+      publishedAt: '',
+      updatedAt: '',
+      tagsText: '',
+      draft: false,
+      visibility: 'private',
+      archive: true,
+      slug: 'private-article',
+      cover: '',
+      badge: ''
+    };
+    const cloned = adapter.cloneValues(privateValues);
+    expect(cloned.visibility).toBe('private');
+    expect(adapter.isEqualValues(cloned, privateValues)).toBe(true);
+    expect(adapter.isEqualValues(cloned, { ...cloned, visibility: 'public' })).toBe(false);
+    expect(adapter.isFrontmatterIssuePath('visibility')).toBe(true);
+    expect(adapter.getWriteFieldLabel('visibility')).toBe('可见性');
+
+    const { visibility: _visibility, ...legacyValues } = privateValues;
+    expect(adapter.cloneValues(legacyValues).visibility).toBe('public');
+  });
+
   it('keeps essay body image tools separate from bits image array tools', () => {
     const essay = getContentEditorAdapter('essay');
     const bits = getContentEditorAdapter('bits');

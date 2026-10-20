@@ -24,6 +24,8 @@ export type AdminEssayEditorValues = {
   updatedAt: string;
   tagsText: string;
   draft: boolean;
+  /** Older editor clients may omit this field; API responses always include it. */
+  visibility?: 'public' | 'private';
   archive: boolean;
   slug: string;
   cover: string;
@@ -144,6 +146,7 @@ const toEssayEditorValues = (state: AdminContentSourceState): AdminEssayEditorVa
     updatedAt: getEssayDateText(frontmatter.updatedAt),
     tagsText: getStringArray(frontmatter.tags).join('\n'),
     draft: frontmatter.draft === true,
+    visibility: frontmatter.visibility === 'private' ? 'private' : 'public',
     archive: frontmatter.archive !== false,
     slug: normalizeOptionalText(frontmatter.slug),
     cover: normalizeOptionalText(frontmatter.cover),

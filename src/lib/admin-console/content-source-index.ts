@@ -59,6 +59,7 @@ export type AdminContentSourceIndexItem = {
   relativePath: string;
   publicHref: string | null;
   isDraft: boolean;
+  visibility?: 'public' | 'private';
   archive: boolean | null;
   date: Date | null;
   dateLabel: string;
@@ -229,6 +230,7 @@ const createBaseItem = (
   publicEntryId: record.publicEntryId,
   relativePath: record.relativePath,
   readonlyReason: getAdminContentReadOnlyReason(record.collection),
+  visibility: 'public',
   ...values
 });
 
@@ -246,14 +248,19 @@ const createEssaySourceIndexItem: FrontmatterAdapter = (record) => {
   const sourceError = mergeSourceError(
     record.sourceError,
     !hasSourceError && !normalizeOptionalText(frontmatter.title) ? 'essay.title 缺失或不是字符串' : null,
-    !hasSourceError && !dateResult ? 'essay.date 缺失或格式无效' : null
+    !hasSourceError && !dateResult ? 'essay.date 缺失或格式无效' : null,
+    !hasSourceError && frontmatter.visibility !== undefined
+      && frontmatter.visibility !== 'public' && frontmatter.visibility !== 'private'
+      ? 'essay.visibility 必须是 public 或 private' : null
   );
 
   return createBaseItem(record, {
     title,
     slug,
-    publicHref: frontmatter.draft === true ? null : `/archive/${slug}/`,
+    publicHref: frontmatter.draft === true || (frontmatter.visibility !== undefined && frontmatter.visibility !== 'public')
+      ? null : `/archive/${slug}/`,
     isDraft: frontmatter.draft === true,
+    visibility: frontmatter.visibility === 'private' ? 'private' : 'public',
     archive: frontmatter.archive !== false,
     date,
     dateLabel: hasSourceError ? SOURCE_ERROR_DATE_LABEL : label,

@@ -71,6 +71,21 @@ const createItem = (overrides: Partial<AdminContentIndexItem> = {}): AdminConten
   };
 };
 
+describe('essay visibility filters', () => {
+  it('filters private articles independently of draft state and preserves visibility in filter links', () => {
+    const items = [
+      createItem({ id: 'public', visibility: 'public' }),
+      createItem({ id: 'private', visibility: 'private' }),
+      createItem({ id: 'private-draft', visibility: 'private', isDraft: true })
+    ];
+    const state = getAdminContentFilterState(new URLSearchParams('collection=essay&visibility=private'));
+    expect(filterAdminContentItems(items, state).map((item) => item.id)).toEqual(['private', 'private-draft']);
+    expect(getAdminContentFilterHref(state, { sort: 'title' })).toContain('visibility=private');
+    expect(filterAdminContentItems(items, { ...state, draft: 'published' }).map((item) => item.id)).toEqual(['private']);
+    expect(filterAdminContentItems(items, { ...state, visibility: 'public' }).map((item) => item.id)).toEqual(['public']);
+  });
+});
+
 const createDefaultItems = (): Record<AdminContentCollectionKey, AdminContentIndexItem[]> => ({
   essay: [createItem()],
   bits: [

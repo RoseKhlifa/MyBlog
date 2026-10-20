@@ -517,6 +517,7 @@ export const runProductionArtifactCheck = async (options = {}) => {
     !existsSync('dist/api/admin/site-assets/favicon-preview'),
     'Private favicon previews must not be generated in the public static build'
   );
+  expect(!existsSync('dist/admin/reader'), 'Authenticated article reader must not be generated in the public build');
 
   console.log('Production artifact verification passed.');
 };

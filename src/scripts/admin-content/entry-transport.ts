@@ -125,6 +125,7 @@ const isAdminEssayEditorValues = (value: unknown): value is AdminEssayEditorValu
   && typeof value.updatedAt === 'string'
   && typeof value.tagsText === 'string'
   && typeof value.draft === 'boolean'
+  && (value.visibility === undefined || value.visibility === 'public' || value.visibility === 'private')
   && typeof value.archive === 'boolean'
   && typeof value.slug === 'string'
   && typeof value.cover === 'string'

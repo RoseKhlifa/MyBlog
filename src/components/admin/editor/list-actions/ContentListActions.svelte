@@ -82,6 +82,7 @@ const createEmptyFrontmatter = (): AdminEssayEditorValues => ({
   updatedAt: '',
   tagsText: '',
   draft: false,
+  visibility: 'public',
   archive: true,
   slug: '',
   cover: '',

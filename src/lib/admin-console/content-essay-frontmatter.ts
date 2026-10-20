@@ -31,6 +31,7 @@ export type AdminEssayFrontmatter = {
   updatedAt?: string;
   tags: string[];
   draft: boolean;
+  visibility: 'public' | 'private';
   archive: boolean;
   slug?: string;
   cover?: string;
@@ -69,17 +70,24 @@ export const parseAdminEssayEditorInput = (
   values?: AdminEssayEditorValues;
   publishedAtInputMode: AdminEssayOptionalInputMode;
   updatedAtInputMode: AdminEssayOptionalInputMode;
+  visibilityInputMode: AdminEssayOptionalInputMode;
   issues: AdminContentValidationIssue[];
 } => {
   if (!isRecord(input)) {
     return {
       publishedAtInputMode: 'missing',
       updatedAtInputMode: 'missing',
+      visibilityInputMode: 'missing',
       issues: [createIssue('frontmatter', 'frontmatter 必须是对象')]
     };
   }
 
   const issues: AdminContentValidationIssue[] = [];
+  const hasVisibilityInput = hasOwn(input, 'visibility');
+  const visibility = hasVisibilityInput ? input.visibility : 'public';
+  if (visibility !== 'public' && visibility !== 'private') {
+    issues.push(createIssue('visibility', 'essay.visibility 必须是 public 或 private'));
+  }
   const rawPublishedAtInput = input.publishedAt;
   const hasPublishedAtInput = hasOwn(input, 'publishedAt')
     && typeof rawPublishedAtInput === 'string';
@@ -94,6 +102,7 @@ export const parseAdminEssayEditorInput = (
     updatedAt: hasUpdatedAtInput ? rawUpdatedAtInput : '',
     tagsText: getRequiredStringField(input, 'tagsText', issues),
     draft: getRequiredBooleanField(input, 'draft', issues),
+    visibility: visibility === 'private' ? 'private' : 'public',
     archive: getRequiredBooleanField(input, 'archive', issues),
     slug: getRequiredStringField(input, 'slug', issues),
     cover: getRequiredStringField(input, 'cover', issues),
@@ -104,12 +113,14 @@ export const parseAdminEssayEditorInput = (
     ? {
         publishedAtInputMode: hasPublishedAtInput ? 'present' : 'missing',
         updatedAtInputMode: hasUpdatedAtInput ? 'present' : 'missing',
+        visibilityInputMode: hasVisibilityInput ? 'present' : 'missing',
         issues
       }
     : {
         values,
         publishedAtInputMode: hasPublishedAtInput ? 'present' : 'missing',
         updatedAtInputMode: hasUpdatedAtInput ? 'present' : 'missing',
+        visibilityInputMode: hasVisibilityInput ? 'present' : 'missing',
         issues
       };
 };
@@ -234,9 +245,16 @@ export const buildEssayFrontmatterFromValues = (
   options: {
     preservedPublishedAt?: string;
     preservedUpdatedAt?: string;
+    preservedVisibility?: unknown;
   } = {}
 ): { frontmatter?: AdminEssayFrontmatter; issues: AdminContentValidationIssue[] } => {
   const issues: AdminContentValidationIssue[] = [];
+  const visibility = hasOwn(options, 'preservedVisibility')
+    ? options.preservedVisibility
+    : values.visibility ?? 'public';
+  if (visibility !== 'public' && visibility !== 'private') {
+    issues.push(createIssue('visibility', 'essay.visibility 必须是 public 或 private'));
+  }
   const title = values.title.trim();
   if (!title) {
     issues.push(createIssue('title', 'title 不能为空'));
@@ -307,6 +325,7 @@ export const buildEssayFrontmatterFromValues = (
       ...(updatedAtText ? { updatedAt: updatedAtText } : {}),
       tags,
       draft: values.draft === true,
+      visibility: visibility === 'private' ? 'private' : 'public',
       archive: values.archive !== false,
       ...(slug ? { slug } : {}),
       ...(values.cover.trim() ? { cover: values.cover.trim() } : {}),

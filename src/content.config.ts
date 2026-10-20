@@ -5,6 +5,7 @@ import { ESSAY_PUBLIC_SLUG_RE } from './utils/slug-rules';
 import { normalizeBitsAvatarPath } from './utils/format';
 import { parseEssayDateInput, parseEssayPublishedAtInput } from './utils/date-only';
 import { normalizeBitsImageSource } from './lib/bits-image-source';
+import { publicEssayLoader } from './lib/public-essay-loader';
 
 const slugRule = z
   .string()
@@ -16,6 +17,7 @@ const essayBaseFields = {
   date: z.unknown(),
   tags: z.array(z.string()).default([]),
   draft: z.boolean().default(false),
+  visibility: z.enum(['public', 'private']).default('public'),
   archive: z.boolean().default(true),
   publishedAt: z.unknown().optional(),
   updatedAt: z.unknown().optional(),
@@ -133,7 +135,7 @@ const bitsAuthor = z.object({
 });
 
 const essay = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/essay' }),
+  loader: publicEssayLoader(),
   schema: essaySchema
 });
 

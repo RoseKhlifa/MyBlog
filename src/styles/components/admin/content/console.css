@@ -795,6 +795,14 @@
   color: var(--admin-status-info-text);
 }
 
+.admin-content-row-mark--private {
+  padding: 1px 6px;
+  border: 1px solid var(--admin-status-info-border);
+  border-radius: 5px;
+  background: var(--admin-status-info-bg);
+  color: var(--admin-status-info-text);
+}
+
 .admin-content-source-error {
   position: relative;
   flex: 0 0 auto;

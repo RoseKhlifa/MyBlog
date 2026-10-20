@@ -22,6 +22,7 @@ import { tokenizeSearchQuery } from '../../utils/format';
 import { getAdminContentCollectionCapability } from './content-collections';
 
 export type AdminContentDraftFilter = 'all' | 'draft' | 'published';
+export type AdminContentVisibilityFilter = 'all' | 'public' | 'private';
 export type AdminContentSortKey = 'recent' | 'title';
 export type AdminContentConsoleMode = 'overview' | 'search' | 'collection' | 'entry';
 
@@ -54,6 +55,7 @@ export type AdminContentFilterState = {
   query: string;
   queryTokens: string[];
   draft: AdminContentDraftFilter;
+  visibility?: AdminContentVisibilityFilter;
   tag: string;
   year: number | null;
   sort: AdminContentSortKey;
@@ -64,6 +66,7 @@ export type AdminContentFilterState = {
 export type AdminContentFilterHrefUpdates = {
   collection?: AdminContentScopeKey;
   draft?: AdminContentDraftFilter;
+  visibility?: AdminContentVisibilityFilter;
   sort?: AdminContentSortKey;
   year?: string | number | null;
 };
@@ -300,6 +303,9 @@ export const getAdminContentFilterState = (searchParams: URLSearchParams): Admin
     query,
     queryTokens: tokenizeSearchQuery(query),
     draft: isAdminContentDraftFilter(draftValue) ? draftValue : 'all',
+    visibility: collection === 'essay' && searchParams.get('visibility') === 'private'
+      ? 'private'
+      : collection === 'essay' && searchParams.get('visibility') === 'public' ? 'public' : 'all',
     tag: normalizeAdminContentTagFilter(searchParams.get('tag')),
     year,
     sort: isAdminContentSortKey(sortValue) ? sortValue : 'recent',
@@ -321,6 +327,8 @@ export const filterAdminContentItems = (
 
   const filteredItems = items.filter((item) => {
     if (filterState.collection !== 'all' && item.collection !== filterState.collection) return false;
+    if (filterState.collection === 'essay' && filterState.visibility && filterState.visibility !== 'all'
+      && (item.visibility ?? 'public') !== filterState.visibility) return false;
     const articleFilters = getAdminContentCollectionCapability(item.collection).articleFilters;
     if (articleFilters && filterState.draft === 'draft' && !item.isDraft) return false;
     if (articleFilters && filterState.draft === 'published' && item.isDraft) return false;
@@ -342,7 +350,7 @@ export const filterAdminContentItems = (
 };
 
 export const getAdminContentFilterHref = (
-  filterState: Pick<AdminContentFilterState, 'collection' | 'query' | 'draft' | 'sort' | 'year'>,
+  filterState: Pick<AdminContentFilterState, 'collection' | 'query' | 'draft' | 'sort' | 'year' | 'visibility'>,
   updates: AdminContentFilterHrefUpdates = {},
   contentHref = '/admin/content/'
 ): string => {
@@ -357,6 +365,8 @@ export const getAdminContentFilterHref = (
     const nextYear = updates.year !== undefined ? updates.year : filterState.year;
 
     params.set('collection', nextCollection);
+    const visibility = updates.visibility ?? filterState.visibility ?? 'all';
+    if (nextCollection === 'essay' && visibility !== 'all') params.set('visibility', visibility);
     if (nextCapability.articleFilters) {
       if (nextDraft !== 'all') params.set('draft', nextDraft);
       if (nextSort !== 'recent') params.set('sort', nextSort);
@@ -473,6 +483,7 @@ export const getAdminContentConsolePageData = async (
       mode !== 'overview'
       || filterState.query.length > 0
       || filterState.draft !== 'all'
+      || (filterState.visibility !== undefined && filterState.visibility !== 'all')
       || filterState.tag.length > 0
       || filterState.year !== null
       || filterState.sort !== 'recent'

@@ -1,0 +1,26 @@
+---
+import ArticleLayout from '../../../layouts/ArticleLayout.astro';
+import { readAdminEssayReader } from '../../../lib/admin-console/essay-reader';
+import { getThemeSettings, getVisibleArticleMetaTags } from '../../../lib/theme-settings';
+
+// Authenticated development server only. The public static release emits no reader pages.
+export const getStaticPaths = () => [];
+
+if (!import.meta.env.DEV) return new Response('Not Found', { status: 404 });
+const result = await readAdminEssayReader(Astro.params.slug ?? '');
+if (!result) return new Response('Not Found', { status: 404, headers: { 'cache-control': 'private, no-store' } });
+const { entry, html } = result;
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+---
+
+<ArticleLayout
+  entry={entry}
+  prev={null}
+  next={null}
+  privateReader
+  articleMetaSettings={getThemeSettings().settings.ui.articleMeta}
+  visibleTags={getVisibleArticleMetaTags(entry.data.tags, 'detail')}
+>
+  <Fragment set:html={html} />
+</ArticleLayout>

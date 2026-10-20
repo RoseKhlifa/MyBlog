@@ -213,9 +213,9 @@ const getCollectionDraftCount = (
   entries: readonly EssayEntry[] | readonly BitsEntry[] | readonly MemoEntry[]
 ): number => entries.filter((entry) => entry.data.draft === true).length;
 
-const filterPublishedEntries = <Entry extends { data: { draft?: boolean } }>(
+const filterPublishedEntries = <Entry extends { data: { draft?: boolean; visibility?: string } }>(
   entries: readonly Entry[]
-): Entry[] => entries.filter((entry) => entry.data.draft !== true);
+): Entry[] => entries.filter((entry) => entry.data.draft !== true && entry.data.visibility !== 'private');
 
 const filterArchiveEssays = (essays: readonly EssayEntry[]): EssayEntry[] =>
   essays.filter((entry) => entry.data.archive !== false && !isReservedSlug(getEssaySlug(entry)));

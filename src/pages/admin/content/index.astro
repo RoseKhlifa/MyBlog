@@ -107,7 +107,8 @@ const getContentRowDateLabel = (
 ): string =>
   item.collection === 'bits' && item.date ? formatISODate(item.date) : item.dateLabel;
 
-const getContentPublicLinkLabel = (item: Pick<AdminContentIndexItem, 'collection'>): string => {
+const getContentPublicLinkLabel = (item: Pick<AdminContentIndexItem, 'collection' | 'visibility'>): string => {
+  if (item.collection === 'essay' && item.visibility === 'private') return '私密阅读';
   const capability = getAdminContentCollectionCapability(item.collection);
   if (capability.fixedPage) return `转到${capability.label}`;
   if (item.collection === 'bits') return '前台查看';
@@ -136,6 +137,7 @@ const getContentPaginationHref = (page: number): string => {
 
   if (filterState.query) params.set('q', filterState.query);
   if (filterState.draft !== 'all') params.set('draft', filterState.draft);
+  if (filterState.visibility && filterState.visibility !== 'all') params.set('visibility', filterState.visibility);
   if (filterState.tag) params.set('tag', filterState.tag);
   if (filterState.sort !== 'recent') params.set('sort', filterState.sort);
   if (filterState.year !== null) params.set('year', String(filterState.year));
@@ -147,6 +149,7 @@ const getContentPaginationHref = (page: number): string => {
 const getContentFilterHref = (updates: {
   collection?: AdminContentScopeKey;
   draft?: AdminContentDraftFilter;
+  visibility?: 'all' | 'public' | 'private';
   sort?: AdminContentSortKey;
   year?: string | number | null;
 }): string => {
@@ -157,6 +160,14 @@ const getContentFilterHref = (updates: {
 
 const defaultDraftFilterLabel = ADMIN_CONTENT_DRAFT_OPTIONS[0].label;
 const defaultSortFilterLabel = ADMIN_CONTENT_SORT_OPTIONS[0].label;
+const visibilityFilterOptions = [
+  { value: 'all', label: '全部可见性' },
+  { value: 'public', label: '公开' },
+  { value: 'private', label: '仅自己可见' }
+] as const;
+const currentVisibilityLabel = visibilityFilterOptions.find(
+  (option) => option.value === (pageData?.filterState.visibility ?? 'all')
+)?.label ?? visibilityFilterOptions[0].label;
 
 const getDraftFilterLabel = (value: AdminContentDraftFilter): string =>
   ADMIN_CONTENT_DRAFT_OPTIONS.find((option) => option.value === value)?.label ?? defaultDraftFilterLabel;
@@ -179,6 +190,9 @@ const hiddenFilterInputs = pageData && pageData.collection !== 'all'
       { name: 'collection', value: pageData.collection },
       ...(pageData.filterState.draft !== 'all'
         ? [{ name: 'draft', value: pageData.filterState.draft }]
+        : []),
+      ...(pageData.filterState.visibility && pageData.filterState.visibility !== 'all'
+        ? [{ name: 'visibility', value: pageData.filterState.visibility }]
         : []),
       ...(pageData.filterState.sort !== 'recent'
         ? [{ name: 'sort', value: pageData.filterState.sort }]
@@ -323,6 +337,30 @@ const getContentCreateAction = (
                         }
                       </div>
                     </details>
+
+                    {
+                      pageData.collection === 'essay' ? (
+                        <details class="admin-content-filter-menu" name={contentFilterMenuGroupName}>
+                          <summary class="admin-content-filter-trigger">
+                            <span>{currentVisibilityLabel}</span>
+                            <AdminIcon name="chevron-down" size={14} />
+                          </summary>
+                          <div class="admin-content-filter-menu__panel" aria-label="文章可见性">
+                            {visibilityFilterOptions.map((option) => (
+                              <a
+                                class:list={[
+                                  'admin-content-filter-option',
+                                  option.value === (pageData.filterState.visibility ?? 'all') && 'is-active'
+                                ]}
+                                href={getContentFilterHref({ visibility: option.value })}
+                              >
+                                {option.label}
+                              </a>
+                            ))}
+                          </div>
+                        </details>
+                      ) : null
+                    }
 
                     {
                       shouldEnableScopedFilterMenus ? (
@@ -517,7 +555,9 @@ const getContentCreateAction = (
                                     : editHref
                                   : null;
                                 const entryTitleHref = capability.writable ? editHref : getCollectionListHref(item.collection);
-                                const publicHref = item.publicHref ? withBase(item.publicHref) : null;
+                                const publicHref = item.collection === 'essay' && item.visibility === 'private' && item.slug
+                                  ? withBase(`/admin/reader/${encodeURIComponent(item.slug)}/`)
+                                  : item.publicHref ? withBase(item.publicHref) : null;
                                 const publicFallbackLabel = getAdminContentPublicFallbackLabel(item);
                                 const exportHref = getContentEntryExportHref(item.collection, item.id);
                                 const deleteUnsupportedReason = capability.deleteUnsupportedReason ?? `当前 collection 暂不支持删除：${item.collection}`;
@@ -575,6 +615,12 @@ const getContentCreateAction = (
                                         </details>
                                       ) : null
                                     }
+                                    <span
+                                      class="admin-content-row-mark admin-content-row-mark--private"
+                                      hidden={item.collection !== 'essay' || item.visibility !== 'private'}
+                                    >
+                                      仅自己可见
+                                    </span>
                                     <span
                                       class="admin-content-row-mark admin-content-row-mark--draft"
                                       hidden={!item.isDraft}

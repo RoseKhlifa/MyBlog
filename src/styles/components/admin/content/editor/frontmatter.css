@@ -265,6 +265,12 @@
   grid-column: 1 / -1;
 }
 
+.admin-editor-frontmatter__note--info {
+  border-inline-start-color: var(--admin-status-info-border);
+  background: var(--admin-status-info-bg);
+  color: var(--admin-status-info-text);
+}
+
 .admin-editor-frontmatter__note--error {
   border-inline-start: 0;
   background: color-mix(in srgb, var(--admin-error-accent) 6%, var(--panel) 94%);

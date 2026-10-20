@@ -18,6 +18,7 @@ type CollectionEntryWithSourcePath = {
 };
 type CollectionEntryDataWithDraft = {
   draft?: unknown;
+  visibility?: unknown;
 };
 
 export type GetPublishedOptions<K extends CollectionKey> = {
@@ -71,7 +72,11 @@ export async function getPublished<K extends CollectionKey>(
   const prod = import.meta.env.PROD;
   const includeDraft = opts.includeDraft ?? !prod;
   const filter = includeDraft ? undefined : (entry: CollectionEntry<K>) => !isDraftContentEntry(entry);
-  const items = (await getCollection(name, filter)).filter(isContentSourceFilePresent);
+  const items = (await getCollection(name, filter))
+    .filter(isContentSourceFilePresent)
+    // Public getters never expose private essays, including development and
+    // includeDraft callers. Authenticated reading has its own admin route.
+    .filter((entry) => name !== 'essay' || (entry.data as CollectionEntryDataWithDraft).visibility !== 'private');
 
   if (!opts.orderBy) return items;
   return items.slice().sort(opts.orderBy);

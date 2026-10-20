@@ -321,6 +321,7 @@ type AdminEssayCurrentFrontmatter = {
   preservedUpdatedAt?: string;
   tags: unknown;
   draft: unknown;
+  visibility: unknown;
   archive: unknown;
   slug: unknown;
   cover: unknown;
@@ -358,6 +359,7 @@ const buildEssayCurrentFrontmatter = (state: AdminContentSourceState): AdminEssa
     ...(currentUpdatedAtResult ? { preservedUpdatedAt: currentUpdatedAtResult.dateText } : {}),
     tags: getCurrentStringArrayValue(frontmatter, 'tags', []),
     draft: getCurrentBooleanValue(frontmatter, 'draft', false),
+    visibility: hasOwn(frontmatter, 'visibility') ? frontmatter.visibility : 'public',
     archive: getCurrentBooleanValue(frontmatter, 'archive', true),
     slug: getCurrentOptionalTextValue(frontmatter, 'slug'),
     cover: getCurrentOptionalTextValue(frontmatter, 'cover'),
@@ -441,12 +443,14 @@ const buildEssayWritePlan = async (
   options: {
     publishedAtInputMode?: AdminEssayOptionalInputMode;
     updatedAtInputMode?: AdminEssayOptionalInputMode;
+    visibilityInputMode?: AdminEssayOptionalInputMode;
   } = {}
 ): Promise<AdminWritePlan> => {
   const current = buildEssayCurrentFrontmatter(state);
   const shouldPreservePublishedAt = options.publishedAtInputMode === 'missing';
   const shouldPreserveUpdatedAt = options.updatedAtInputMode === 'missing';
   const next = buildEssayFrontmatterFromValues(values, {
+    ...(options.visibilityInputMode === 'missing' ? { preservedVisibility: current.visibility } : {}),
     ...(shouldPreservePublishedAt && current.preservedPublishedAt
       ? { preservedPublishedAt: current.preservedPublishedAt }
       : {}),
@@ -487,6 +491,7 @@ const buildEssayWritePlan = async (
     { field: 'updatedAt', path: ['updatedAt'], currentValue: current.updatedAt, nextValue: next.frontmatter.updatedAt },
     { field: 'tags', path: ['tags'], currentValue: current.tags, nextValue: next.frontmatter.tags },
     { field: 'draft', path: ['draft'], currentValue: current.draft, nextValue: next.frontmatter.draft },
+    { field: 'visibility', path: ['visibility'], currentValue: current.visibility, nextValue: next.frontmatter.visibility },
     { field: 'archive', path: ['archive'], currentValue: current.archive, nextValue: next.frontmatter.archive },
     { field: 'slug', path: ['slug'], currentValue: current.slug, nextValue: next.frontmatter.slug },
     { field: 'cover', path: ['cover'], currentValue: current.cover, nextValue: next.frontmatter.cover },
@@ -603,7 +608,8 @@ export const buildAdminContentWritePlanFromState = async (
       state,
       ...(await buildEssayWritePlan(state, parsed.values, bodyInput, {
         publishedAtInputMode: parsed.publishedAtInputMode,
-        updatedAtInputMode: parsed.updatedAtInputMode
+        updatedAtInputMode: parsed.updatedAtInputMode,
+        visibilityInputMode: parsed.visibilityInputMode
       }))
     };
   }

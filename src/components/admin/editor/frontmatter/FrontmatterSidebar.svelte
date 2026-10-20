@@ -219,6 +219,30 @@ const bitsAuthorAvatarFallback = $derived(
         </label>
       {/if}
 
+      <label class="admin-field admin-content-editor__field" class:is-invalid={Boolean(getIssue('visibility'))}>
+        <span class="admin-field__label">可见性</span>
+        <select
+          class="admin-field__control"
+          name="visibility"
+          value={value.visibility ?? 'public'}
+          aria-invalid={getIssue('visibility') ? 'true' : undefined}
+          aria-describedby={getFieldDescribedBy('visibility', getIssue('visibility'), ['admin-essay-visibility-help'])}
+          {disabled}
+          onchange={(event) => {
+            if (!isEssayEditorValues(value)) return;
+            value.visibility = event.currentTarget.value === 'private' ? 'private' : 'public';
+            onDirty();
+          }}
+        >
+          <option value="public">公开</option>
+          <option value="private">仅自己可见</option>
+        </select>
+        <p id="admin-essay-visibility-help" class="admin-editor-frontmatter__note admin-editor-frontmatter__note--info">
+          仅自己可见的文章只在登录后的后台阅读，不发布到公开网站。
+        </p>
+        <p id={getFieldIssueId('visibility')} class="admin-content-editor__error" hidden={!getIssue('visibility')}>{getIssue('visibility')}</p>
+      </label>
+
       <div class="admin-editor-frontmatter__datetime-grid">
         <div class="admin-field admin-content-editor__field" class:is-invalid={Boolean(getIssue('date'))}>
           <label class="admin-field__label" for="admin-essay-date">发布日期</label>
@@ -354,7 +378,7 @@ const bitsAuthorAvatarFallback = $derived(
       </label>
 
       <div class="admin-field admin-content-editor__field" class:is-invalid={Boolean(getIssue('slug'))}>
-        <label class="admin-field__label" for="admin-essay-slug">公开 URL 别名（可选）</label>
+        <label class="admin-field__label" for="admin-essay-slug">文章 URL 别名（可选）</label>
         <input
           id="admin-essay-slug"
           class="admin-field__control"
