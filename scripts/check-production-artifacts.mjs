@@ -137,7 +137,8 @@ export const runProductionArtifactCheck = async (options = {}) => {
     'dist/api/admin/images/meta',
     'dist/api/admin/images/upload',
     'dist/api/admin/site-assets/upload',
-    'dist/api/admin/site-assets/hero'
+    'dist/api/admin/site-assets/hero',
+    'dist/api/admin/site-assets/avatar'
   ];
 
   for (const artifactPath of requiredArtifacts) {
@@ -501,6 +502,16 @@ export const runProductionArtifactCheck = async (options = {}) => {
     'dist/api/admin/site-assets/hero',
     adminHeroUploadArtifact,
     '/api/admin/site-assets/hero/'
+  );
+  const adminAvatarUploadArtifact = readText('dist/api/admin/site-assets/avatar');
+  assertAdminImageUploadStaticShell(
+    'dist/api/admin/site-assets/avatar',
+    adminAvatarUploadArtifact,
+    '/api/admin/site-assets/avatar/'
+  );
+  expect(
+    !existsSync('dist/api/admin/site-assets/avatar-preview'),
+    'Private avatar previews must not be generated in the public static build'
   );
 
   console.log('Production artifact verification passed.');

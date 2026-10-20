@@ -126,6 +126,7 @@ const scanHtml = (body, url) => {
 
 try {
   const seeds = [
+    ['/admin/theme/', 'html'],
     ['/admin/content/', 'html'],
     ['/admin/content/essay/_edit/markdown-guide/', 'html'],
     ['/api/admin/content/entry/?collection=essay&entryId=markdown-guide', 'json'],

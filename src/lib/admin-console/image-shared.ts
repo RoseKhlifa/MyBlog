@@ -31,6 +31,7 @@ import {
   type AdminImageMetaInput
 } from './image-params';
 import {
+  createWithBase,
   getBitsAvatarLocalFilePath,
   getHeroImageLocalFilePath,
   normalizeBitsAvatarPath,
@@ -317,6 +318,11 @@ const toDevFsPreviewSrc = (assetPath: string): string =>
 const getPreviewSrcFromPath = (assetPath: string): string | null => {
   const safeRemoteUrl = toSafeHttpUrl(assetPath);
   if (safeRemoteUrl.startsWith('https://')) return safeRemoteUrl;
+  const uploadedAvatar = /^public\/author\/uploads\/(avatar-[0-9a-f]{64}\.(?:png|jpg|webp|avif|gif))$/.exec(assetPath);
+  if (uploadedAvatar) {
+    // New public files reach the public server only after publishing; preview through the editor now.
+    return createWithBase(import.meta.env.BASE_URL ?? '/')(`/api/admin/site-assets/avatar-preview/${uploadedAvatar[1]}/`);
+  }
   if (assetPath.startsWith('public/')) return `/${assetPath.slice('public/'.length)}`;
   if (assetPath.startsWith('src/assets/') || assetPath.startsWith('src/content/')) {
     return toDevFsPreviewSrc(assetPath);
@@ -1090,7 +1096,7 @@ const resolveFieldImageTarget = (field: AdminImageFieldContext, rawValue: string
         path: getBitsAvatarLocalFilePath(normalized) ?? `public/${normalized}`,
         value: normalized,
         origin: 'public',
-        previewSrc: `/${normalized}`
+        previewSrc: getPreviewSrcFromPath(getBitsAvatarLocalFilePath(normalized) ?? `public/${normalized}`)
       }
     };
   }

@@ -152,11 +152,13 @@
   gap: 8px;
 }
 
-.admin-images-field-input--hero-upload {
+.admin-images-field-input--hero-upload,
+.admin-images-field-input--upload {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
-[data-admin-hero-upload-status][data-state='warn'] {
+[data-admin-hero-upload-status][data-state='warn'],
+[data-admin-avatar-upload-status][data-state='warn'] {
   color: var(--admin-status-danger-text);
 }
 
@@ -250,7 +252,7 @@
 
 .admin-author-image {
   display: grid;
-  grid-template-columns: minmax(0, 260px) max-content;
+  grid-template-columns: minmax(0, 1fr) max-content;
   gap: 12px 20px;
   align-items: start;
 }
@@ -1142,11 +1144,13 @@
 }
 
 @container admin-theme-form (max-width: 480px) {
-  .admin-images-field-input--hero-upload {
+  .admin-images-field-input--hero-upload,
+  .admin-images-field-input--upload {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  .admin-images-field-input--hero-upload > .admin-field__control {
+  .admin-images-field-input--hero-upload > .admin-field__control,
+  .admin-images-field-input--upload > .admin-field__control {
     grid-column: 1 / -1;
     width: 100%;
   }

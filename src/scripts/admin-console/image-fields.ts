@@ -1,7 +1,10 @@
 import {
   getAdminRenderedImagePreviewSrc
 } from '../../lib/admin-console/image-params';
-import { ADMIN_HERO_IMAGE_UPLOAD_API_PATH } from '../../lib/admin-console/admin-api-paths';
+import {
+  ADMIN_AVATAR_IMAGE_UPLOAD_API_PATH,
+  ADMIN_HERO_IMAGE_UPLOAD_API_PATH
+} from '../../lib/admin-console/admin-api-paths';
 import { createWithBase } from '../../utils/format';
 import {
   formatAdminImageMetaSummary,
@@ -20,14 +23,14 @@ type StatusSetter = (
 const base = import.meta.env.BASE_URL ?? '/';
 const withBase = createWithBase(base);
 const META_PREVIEW_DEBOUNCE_MS = 360;
-const HERO_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
-const HERO_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
+const THEME_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+const THEME_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
 
-const getHeroUploadValidationError = (file: File): string | null => {
+const getImageUploadValidationError = (file: File): string | null => {
   if (!file.size) return '图片文件为空，请重新选择';
-  if (file.size > HERO_IMAGE_MAX_BYTES) return '图片超过 12 MB，请压缩后再上传';
+  if (file.size > THEME_IMAGE_MAX_BYTES) return '图片超过 12 MB，请压缩后再上传';
   if (
-    (file.type && !HERO_IMAGE_MIME_TYPES.has(file.type))
+    (file.type && !THEME_IMAGE_MIME_TYPES.has(file.type))
     || !/\.(?:jpe?g|png|webp|avif|gif)$/i.test(file.name)
   ) {
     return '请选择 JPG、PNG、WebP、AVIF 或 GIF 图片';
@@ -45,6 +48,14 @@ type ThemeImageFieldConfig = {
   pickerResetStatus: string;
   pickerFallbackCurrentValue?: string;
   pickerFallbackCurrentLabel?: string;
+  upload: {
+    endpoint: string;
+    label: string;
+    buttonSelector: string;
+    fileSelector: string;
+    statusSelector: string;
+    isResultSrc: (src: string) => boolean;
+  };
 };
 
 type ThemeImageFieldState = {
@@ -68,7 +79,15 @@ const FIELD_CONFIGS: readonly ThemeImageFieldConfig[] = [
     pickerResetLabel: '恢复默认',
     pickerResetStatus: '已恢复 Hero 默认图',
     pickerFallbackCurrentValue: 'src/assets/hero.png',
-    pickerFallbackCurrentLabel: '默认图片'
+    pickerFallbackCurrentLabel: '默认图片',
+    upload: {
+      endpoint: ADMIN_HERO_IMAGE_UPLOAD_API_PATH,
+      label: 'Hero 图片',
+      buttonSelector: '[data-admin-hero-upload]',
+      fileSelector: '[data-admin-hero-file]',
+      statusSelector: '[data-admin-hero-upload-status]',
+      isResultSrc: (src) => /^src\/assets\/hero-uploads\/hero-[a-f\d]+\.(?:jpe?g|png|webp|avif|gif)$/i.test(src)
+    }
   },
   {
     field: 'page.bits.defaultAuthor.avatar',
@@ -77,7 +96,15 @@ const FIELD_CONFIGS: readonly ThemeImageFieldConfig[] = [
     pickerTitle: '更换 Bits 作者头像',
     pickerDescription: '仅列出可直接写入 page.bits.defaultAuthor.avatar 的本地 public/** 资源。',
     pickerResetLabel: '清空头像',
-    pickerResetStatus: '已清空 Bits 默认头像'
+    pickerResetStatus: '已清空 Bits 默认头像',
+    upload: {
+      endpoint: ADMIN_AVATAR_IMAGE_UPLOAD_API_PATH,
+      label: '默认头像',
+      buttonSelector: '[data-admin-avatar-upload]',
+      fileSelector: '[data-admin-avatar-file]',
+      statusSelector: '[data-admin-avatar-upload-status]',
+      isResultSrc: (src) => /^author\/uploads\/avatar-[a-f\d]+\.(?:jpe?g|png|webp|avif|gif)$/i.test(src)
+    }
   }
 ];
 
@@ -205,7 +232,6 @@ export const createAdminThemeImageFields = ({
     const previewPlaceholder = root.querySelector<HTMLElement>(
       `[data-admin-images-preview-placeholder="${config.field}"]`
     );
-    const isHero = config.field === 'home.heroImageSrc';
     return {
       config,
       input,
@@ -214,9 +240,9 @@ export const createAdminThemeImageFields = ({
       previewWrap,
       previewImg,
       previewPlaceholder,
-      uploadButton: isHero ? root.querySelector<HTMLButtonElement>('[data-admin-hero-upload]') : null,
-      fileInput: isHero ? root.querySelector<HTMLInputElement>('[data-admin-hero-file]') : null,
-      uploadStatus: isHero ? root.querySelector<HTMLElement>('[data-admin-hero-upload-status]') : null,
+      uploadButton: root.querySelector<HTMLButtonElement>(config.upload.buttonSelector),
+      fileInput: root.querySelector<HTMLInputElement>(config.upload.fileSelector),
+      uploadStatus: root.querySelector<HTMLElement>(config.upload.statusSelector),
       uploadBusy: false
     };
   }).filter((binding) => binding.input instanceof HTMLInputElement);
@@ -339,7 +365,7 @@ export const createAdminThemeImageFields = ({
       setStatus(state, message, { announce: false });
     };
 
-    const uploadHeroImage = async (file: File): Promise<void> => {
+    const uploadImage = async (file: File): Promise<void> => {
       const input = binding.input;
       if (
         !(input instanceof HTMLInputElement)
@@ -348,7 +374,7 @@ export const createAdminThemeImageFields = ({
         || getFieldState(binding.config.field).enabled === false
       ) return;
 
-      const validationError = getHeroUploadValidationError(file);
+      const validationError = getImageUploadValidationError(file);
       if (validationError) {
         setUploadStatus('warn', validationError);
         return;
@@ -356,11 +382,11 @@ export const createAdminThemeImageFields = ({
 
       binding.uploadBusy = true;
       syncImageControls(binding);
-      setUploadStatus('loading', '正在上传 Hero 图片…');
+      setUploadStatus('loading', `正在上传${binding.config.upload.label}…`);
       try {
         const formData = new FormData();
         formData.set('image', file);
-        const response = await fetch(withBase(ADMIN_HERO_IMAGE_UPLOAD_API_PATH), {
+        const response = await fetch(withBase(binding.config.upload.endpoint), {
           method: 'POST',
           headers: { Accept: 'application/json' },
           body: formData
@@ -376,9 +402,9 @@ export const createAdminThemeImageFields = ({
           || payload.ok !== true
           || !isRecord(payload.result)
           || typeof payload.result.src !== 'string'
-          || !/^src\/assets\/hero-uploads\/hero-[a-f\d]+\.(?:jpe?g|png|webp|avif|gif)$/i.test(payload.result.src)
+          || !binding.config.upload.isResultSrc(payload.result.src)
         ) {
-          const message = getAdminImageResponseErrors(payload).join('；') || 'Hero 图片上传失败，请稍后重试';
+          const message = getAdminImageResponseErrors(payload).join('；') || `${binding.config.upload.label}上传失败，请稍后重试`;
           setUploadStatus('warn', message);
           return;
         }
@@ -388,7 +414,7 @@ export const createAdminThemeImageFields = ({
         input.dispatchEvent(new Event('change', { bubbles: true }));
         setUploadStatus('ok', '已上传，保存配置后生效');
       } catch {
-        setUploadStatus('warn', 'Hero 图片上传失败，请检查网络后重试');
+        setUploadStatus('warn', `${binding.config.upload.label}上传失败，请检查网络后重试`);
       } finally {
         binding.uploadBusy = false;
         syncImageControls(binding);
@@ -402,7 +428,7 @@ export const createAdminThemeImageFields = ({
     binding.fileInput?.addEventListener('change', () => {
       const file = binding.fileInput?.files?.[0];
       if (binding.fileInput) binding.fileInput.value = '';
-      if (file) void uploadHeroImage(file);
+      if (file) void uploadImage(file);
     });
     if (binding.uploadButton) {
       new MutationObserver(() => syncImageControls(binding)).observe(binding.input, {

@@ -232,19 +232,53 @@ const {
         <div class="admin-field">
           <span class="admin-label">
             <label class="admin-label__main" for="page-bits-author-avatar">默认头像</label>
-            <span class="admin-label__hint">（相对路径）</span>
+            <span class="admin-label__hint">（可上传或选择已有图片）</span>
           </span>
-          <div class="admin-images-field-input">
-            <input class="admin-field__control" id="page-bits-author-avatar" type="text" autocomplete="off" />
+          <div class="admin-images-field-input admin-images-field-input--upload">
+            <input
+              class="admin-field__control"
+              id="page-bits-author-avatar"
+              type="text"
+              autocomplete="off"
+              aria-describedby="page-bits-author-avatar-upload-help page-bits-author-avatar-upload-status"
+            />
+            <button
+              class="admin-btn"
+              type="button"
+              data-admin-avatar-upload
+              aria-controls="page-bits-author-avatar-file"
+            >
+              上传图片
+            </button>
             <button
               class="admin-btn admin-btn--ghost"
               type="button"
               data-admin-images-open="page.bits.defaultAuthor.avatar"
               aria-label="选择 Bits 默认头像"
             >
-              选择
+              选择已有
             </button>
           </div>
+          <input
+            id="page-bits-author-avatar-file"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif,image/gif,.jpg,.jpeg,.png,.webp,.avif,.gif"
+            data-admin-avatar-file
+            aria-label="上传默认头像"
+            hidden
+          />
+          <p class="admin-help admin-help--inline" id="page-bits-author-avatar-upload-help">
+            支持 JPG、PNG、WebP、AVIF、GIF，最大 12 MB；建议使用方图，上传后保存配置生效。
+          </p>
+          <p
+            class="admin-help admin-help--inline"
+            id="page-bits-author-avatar-upload-status"
+            data-admin-avatar-upload-status
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
+          <p class="admin-help admin-help--inline" data-admin-images-meta="page.bits.defaultAuthor.avatar" hidden></p>
         </div>
       </div>
       <div class="admin-author-image__preview" aria-label="默认头像预览">

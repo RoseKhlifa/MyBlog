@@ -221,7 +221,7 @@ const withAdminPreviewBase = (base: string, path: string): string => {
   return `${basePath}${normalizedPath}`;
 };
 
-const normalizeRenderedLocalImagePreviewPath = (value: string): { path: string; search: string } | null => {
+const normalizeRenderedLocalImagePreviewPath = (value: string, base: string): { path: string; search: string } | null => {
   const normalized = value.trim().replace(/\\/g, '/').replace(/^\.\/+/, '');
   if (
     !normalized
@@ -237,14 +237,20 @@ const normalizeRenderedLocalImagePreviewPath = (value: string): { path: string; 
   const search = searchIndex === -1 ? '' : normalized.slice(searchIndex);
   if (!pathPart || /(^|\/)\.\.(?:\/|$)/.test(pathPart)) return null;
 
-  return IMAGE_LOCAL_EXT_RE.test(pathPart) ? { path: pathPart, search } : null;
+  // Astro's trailingSlash setting also applies to this development-only image endpoint.
+  // Keep the exception limited to generated avatar previews, including a configured site base.
+  const avatarPreviewPrefix = '/api/admin/site-assets/avatar-preview/';
+  const isAvatarPreview = [avatarPreviewPrefix, withAdminPreviewBase(base, avatarPreviewPrefix)]
+    .some((prefix) => pathPart.startsWith(prefix)
+      && /^avatar-[0-9a-f]{64}\.(?:png|jpg|webp|avif|gif)\/$/.test(pathPart.slice(prefix.length)));
+  return IMAGE_LOCAL_EXT_RE.test(pathPart) || isAvatarPreview ? { path: pathPart, search } : null;
 };
 
 export const getAdminRenderedImagePreviewSrc = (value: string, base = '/'): string | null => {
   const safeRemoteUrl = toSafeHttpUrl(value);
   if (safeRemoteUrl.startsWith('https://')) return safeRemoteUrl;
 
-  const localPath = normalizeRenderedLocalImagePreviewPath(value);
+  const localPath = normalizeRenderedLocalImagePreviewPath(value, base);
   return localPath ? `${withAdminPreviewBase(base, localPath.path)}${localPath.search}` : null;
 };
 
