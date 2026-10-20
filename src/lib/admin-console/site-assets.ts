@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, readdir, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export type AdminSiteFaviconUploadSlot = 'png' | 'appleTouchIcon';
@@ -32,11 +31,6 @@ const ADMIN_SITE_FAVICON_UPLOAD_SLOTS = ['png', 'appleTouchIcon'] as const satis
 const SLOT_FILE_PREFIX: Record<AdminSiteFaviconUploadSlot, string> = {
   png: 'favicon-',
   appleTouchIcon: 'apple-touch-icon-'
-};
-// 只回收本模块生成的「前缀-WxH-哈希8」命名文件；手工放入的同前缀文件（如 favicon-brand.png）不动。
-const SLOT_GENERATED_FILE_RE: Record<AdminSiteFaviconUploadSlot, RegExp> = {
-  png: /^favicon-\d+x\d+-[0-9a-f]{8}\.png$/,
-  appleTouchIcon: /^apple-touch-icon-\d+x\d+-[0-9a-f]{8}\.png$/
 };
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -71,39 +65,13 @@ const assertFaviconUploadFile = (file: File): void => {
   }
 };
 
-const cleanupStaleSlotFiles = async (
-  directory: string,
-  slot: AdminSiteFaviconUploadSlot,
-  keepFileNames: ReadonlySet<string>
-): Promise<void> => {
-  let entries: string[] = [];
-  try {
-    entries = await readdir(directory);
-  } catch {
-    return;
-  }
-
-  await Promise.all(
-    entries
-      .filter((entry) => SLOT_GENERATED_FILE_RE[slot].test(entry) && !keepFileNames.has(entry))
-      .map(async (entry) => {
-        try {
-          await unlink(path.join(directory, entry));
-        } catch (error) {
-          console.warn(`[astro-whono] Failed to remove stale site asset ${entry}:`, error);
-        }
-      })
-  );
-};
-
 export const uploadAdminSiteFavicon = async ({
   slot,
-  file,
-  referencedPaths = []
+  file
 }: {
   slot: AdminSiteFaviconUploadSlot;
   file: File;
-  /** 当前 settings 已引用的 favicon public 路径（/images/site/**），替换时跳过删除。 */
+  /** 兼容现有调用；上传不会删除旧图，已保存配置并不包含其他标签页中尚未保存的引用。 */
   referencedPaths?: readonly (string | null)[];
 }): Promise<AdminSiteFaviconUploadResult> => {
   assertFaviconUploadFile(file);
@@ -134,18 +102,16 @@ export const uploadAdminSiteFavicon = async ({
   const filePath = path.join(directory, fileName);
 
   await mkdir(directory, { recursive: true });
-  if (!existsSync(filePath)) {
-    await writeFile(filePath, buffer);
+  try {
+    // 原子创建以保护已有文件；同内容复用，不覆盖哈希碰撞或其他已存在的不同内容。
+    await writeFile(filePath, buffer, { flag: 'wx' });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    const existing = await readFile(filePath);
+    if (!existing.equals(buffer)) {
+      throw new AdminSiteAssetUploadError('图标路径已存在不同内容，请重新选择图片', 409);
+    }
   }
-
-  const keepFileNames = new Set<string>([fileName]);
-  for (const referencedPath of referencedPaths) {
-    if (typeof referencedPath !== 'string') continue;
-    if (!referencedPath.startsWith(`/${ADMIN_SITE_ASSET_DIR.slice('public/'.length)}/`)) continue;
-    const referencedFileName = referencedPath.split('/').pop();
-    if (referencedFileName) keepFileNames.add(referencedFileName);
-  }
-  await cleanupStaleSlotFiles(directory, slot, keepFileNames);
 
   return {
     path: `/${ADMIN_SITE_ASSET_DIR.slice('public/'.length)}/${fileName}`,

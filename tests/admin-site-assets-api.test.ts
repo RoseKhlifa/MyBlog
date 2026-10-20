@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -104,7 +104,7 @@ describe('admin site assets api', () => {
     expect(touchIcon.payload.result?.path).toMatch(/^\/images\/site\/apple-touch-icon-180x180-[0-9a-f]{8}\.png$/);
   });
 
-  it('removes stale generated files but keeps referenced and manual files', async () => {
+  it('keeps saved, unreferenced generated, other-slot and manual files on upload', async () => {
     await mkdir(siteAssetDir(), { recursive: true });
     await writeFile(path.join(siteAssetDir(), 'favicon-32x32-aaaaaaaa.png'), createPngBuffer(32, 32));
     await writeFile(path.join(siteAssetDir(), 'favicon-16x16-bbbbbbbb.png'), createPngBuffer(16, 16));
@@ -128,9 +128,43 @@ describe('admin site assets api', () => {
     expect(entries).toContain(payload.result?.fileName);
     expect(entries).toContain('favicon-32x32-aaaaaaaa.png');
     expect(entries).toContain('apple-touch-icon-180x180-cccccccc.png');
-    // 手工放入的非「前缀-WxH-哈希8」命名文件不参与回收
     expect(entries).toContain('favicon-brand.png');
-    expect(entries).not.toContain('favicon-16x16-bbbbbbbb.png');
+    expect(entries).toContain('favicon-16x16-bbbbbbbb.png');
+  });
+
+  it('preserves consecutive unsaved uploads in both slots for independent previews', async () => {
+    const uploads = [
+      { slot: 'png', buffer: createPngBuffer(64, 64) },
+      { slot: 'appleTouchIcon', buffer: createPngBuffer(180, 180) },
+      { slot: 'png', buffer: createPngBuffer(96, 96) },
+      { slot: 'appleTouchIcon', buffer: createPngBuffer(256, 256) }
+    ];
+    const results = [];
+    for (const upload of uploads) {
+      results.push(await postUpload(createFaviconFormData(upload.slot, upload.buffer)));
+    }
+
+    expect(await readdir(siteAssetDir())).toHaveLength(uploads.length);
+    for (const [index, result] of results.entries()) {
+      expect(result.status).toBe(200);
+      expect(await readFile(path.join(siteAssetDir(), result.payload.result?.fileName ?? ''))).toEqual(
+        uploads[index]!.buffer
+      );
+    }
+  });
+
+  it('returns a conflict without overwriting an existing file with different content', async () => {
+    const buffer = createPngBuffer(64, 64);
+    const first = await postUpload(createFaviconFormData('png', buffer));
+    const filePath = path.join(siteAssetDir(), first.payload.result?.fileName ?? '');
+    const existing = Buffer.from('existing file with different content');
+    await writeFile(filePath, existing);
+
+    const repeated = await postUpload(createFaviconFormData('png', buffer));
+
+    expect(repeated.status).toBe(409);
+    expect(repeated.payload.errors?.[0]).toContain('已存在不同内容');
+    expect(await readFile(filePath)).toEqual(existing);
   });
 
   it('rejects non-square, undersized and oversized icons', async () => {

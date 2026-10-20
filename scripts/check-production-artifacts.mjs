@@ -513,6 +513,10 @@ export const runProductionArtifactCheck = async (options = {}) => {
     !existsSync('dist/api/admin/site-assets/avatar-preview'),
     'Private avatar previews must not be generated in the public static build'
   );
+  expect(
+    !existsSync('dist/api/admin/site-assets/favicon-preview'),
+    'Private favicon previews must not be generated in the public static build'
+  );
 
   console.log('Production artifact verification passed.');
 };
