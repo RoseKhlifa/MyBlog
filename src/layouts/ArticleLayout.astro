@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import UiIcon from '../components/UiIcon.astro';
 import Lightbox from '../components/Lightbox.astro';
+import ReadingRail from '../components/ReadingRail.astro';
 import '../styles/article.css';
 import { getEssayDerivedText, type EssayEntry } from '../lib/content';
 import { containsMarkdownMath } from '../lib/markdown-math';
@@ -130,7 +131,8 @@ const shouldShowMetaLine = articleMetaSettings.showDate
     ) : null}
   </div>
 
-  <div class="prose">
+  <ReadingRail />
+  <div class="prose" data-reading-body>
     {privateReader ? (
       <aside class="private-reader-notice" aria-label="后台阅读">
         <strong>{entry.data.visibility === 'private' ? '仅自己可见' : entry.data.draft ? '草稿预览' : '后台阅读'}</strong>

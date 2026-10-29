@@ -1,0 +1,18 @@
+---
+import '../styles/components/reading-rail.css';
+---
+
+<nav class="reading-rail" data-reading-rail hidden aria-label="文章分段阅读导航">
+  <details class="reading-rail__panel">
+    <summary class="reading-rail__summary">
+      <span>本文目录</span>
+      <span class="reading-rail__total" data-reading-total aria-label="阅读进度">0%</span>
+    </summary>
+    <ol class="reading-rail__list" data-reading-list></ol>
+  </details>
+</nav>
+
+<script>
+  import { initReadingRail } from '../scripts/reading-rail';
+  initReadingRail();
+</script>
